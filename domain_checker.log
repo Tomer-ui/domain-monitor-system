@@ -1,0 +1,36 @@
+[Time: 2025-09-04 22:54:24,354, File: _internal.py:97, Function: _log] INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://10.0.0.139:8080
+[Time: 2025-09-04 22:54:24,354, File: _internal.py:97, Function: _log] INFO - [33mPress CTRL+C to quit[0m
+[Time: 2025-09-04 22:54:24,356, File: _internal.py:97, Function: _log] INFO -  * Restarting with stat
+[Time: 2025-09-04 22:54:24,762, File: _internal.py:97, Function: _log] WARNING -  * Debugger is active!
+[Time: 2025-09-04 22:54:24,765, File: _internal.py:97, Function: _log] INFO -  * Debugger PIN: 850-436-173
+[Time: 2025-09-04 22:54:39,853, File: app.py:15, Function: main] INFO - serving main.html
+[Time: 2025-09-04 22:54:39,867, File: _internal.py:97, Function: _log] INFO - 127.0.0.1 - - [04/Sep/2025 22:54:39] "GET / HTTP/1.1" 200 -
+[Time: 2025-09-04 22:54:40,114, File: _internal.py:97, Function: _log] INFO - 127.0.0.1 - - [04/Sep/2025 22:54:40] "GET /style.css HTTP/1.1" 200 -
+[Time: 2025-09-04 22:54:40,114, File: _internal.py:97, Function: _log] INFO - 127.0.0.1 - - [04/Sep/2025 22:54:40] "GET /script.js HTTP/1.1" 200 -
+[Time: 2025-09-04 22:54:44,353, File: app.py:34, Function: get_domain_health] INFO - received request to check domain: google.com
+[Time: 2025-09-04 22:54:44,354, File: domain_checker.py:47, Function: check_domain_status] DEBUG - Starting status check for google.com
+[Time: 2025-09-04 22:54:44,362, File: connectionpool.py:1049, Function: _new_conn] DEBUG - Starting new HTTPS connection (1): google.com:443
+[Time: 2025-09-04 22:54:44,951, File: connectionpool.py:544, Function: _make_request] DEBUG - https://google.com:443 "GET / HTTP/1.1" 301 220
+[Time: 2025-09-04 22:54:44,958, File: connectionpool.py:1049, Function: _new_conn] DEBUG - Starting new HTTPS connection (1): www.google.com:443
+[Time: 2025-09-04 22:54:45,615, File: connectionpool.py:544, Function: _make_request] DEBUG - https://www.google.com:443 "GET / HTTP/1.1" 200 None
+[Time: 2025-09-04 22:54:45,621, File: domain_checker.py:14, Function: get_certificate_info] DEBUG - Starting certificate check for www.google.com
+[Time: 2025-09-04 22:54:45,774, File: domain_checker.py:30, Function: get_certificate_info] INFO - Certificate for www.google.com is valid .
+[Time: 2025-09-04 22:54:45,776, File: domain_checker.py:74, Function: check_domain_status] INFO - Successfully checked google.com. Status: 200.
+[Time: 2025-09-04 22:54:45,787, File: _internal.py:97, Function: _log] INFO - 127.0.0.1 - - [04/Sep/2025 22:54:45] "GET /check_domain?domain=google.com HTTP/1.1" 200 -
+[Time: 2025-09-04 22:54:59,096, File: app.py:34, Function: get_domain_health] INFO - received request to check domain: https://expired.badssl.com
+[Time: 2025-09-04 22:54:59,096, File: domain_checker.py:47, Function: check_domain_status] DEBUG - Starting status check for https://expired.badssl.com
+[Time: 2025-09-04 22:54:59,100, File: connectionpool.py:1049, Function: _new_conn] DEBUG - Starting new HTTPS connection (1): https:443
+[Time: 2025-09-04 22:55:01,855, File: domain_checker.py:71, Function: check_domain_status] ERROR - HTTPS check for https://expired.badssl.com failed: HTTPSConnectionPool(host='https', port=443): Max retries exceeded with url: /expired.badssl.com (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000021F8450F4D0>: Failed to resolve 'https' ([Errno 11001] getaddrinfo failed)")).
+[Time: 2025-09-04 22:55:01,856, File: domain_checker.py:74, Function: check_domain_status] INFO - Successfully checked https://expired.badssl.com. Status: FAILED.
+[Time: 2025-09-04 22:55:01,857, File: _internal.py:97, Function: _log] INFO - 127.0.0.1 - - [04/Sep/2025 22:55:01] "GET /check_domain?domain=https://expired.badssl.com HTTP/1.1" 200 -
+[Time: 2025-09-04 22:55:04,820, File: app.py:34, Function: get_domain_health] INFO - received request to check domain: expired.badssl.com
+[Time: 2025-09-04 22:55:04,821, File: domain_checker.py:47, Function: check_domain_status] DEBUG - Starting status check for expired.badssl.com
+[Time: 2025-09-04 22:55:04,825, File: connectionpool.py:1049, Function: _new_conn] DEBUG - Starting new HTTPS connection (1): expired.badssl.com:443
+[Time: 2025-09-04 22:55:05,887, File: connectionpool.py:544, Function: _make_request] DEBUG - https://expired.badssl.com:443 "GET / HTTP/1.1" 200 None
+[Time: 2025-09-04 22:55:05,888, File: domain_checker.py:14, Function: get_certificate_info] DEBUG - Starting certificate check for expired.badssl.com
+[Time: 2025-09-04 22:55:06,391, File: domain_checker.py:34, Function: get_certificate_info] ERROR - an error occurred during certificate check for expired.badssl.com: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1028)
+[Time: 2025-09-04 22:55:06,394, File: domain_checker.py:74, Function: check_domain_status] INFO - Successfully checked expired.badssl.com. Status: 200.
+[Time: 2025-09-04 22:55:06,397, File: _internal.py:97, Function: _log] INFO - 127.0.0.1 - - [04/Sep/2025 22:55:06] "GET /check_domain?domain=expired.badssl.com HTTP/1.1" 200 -
