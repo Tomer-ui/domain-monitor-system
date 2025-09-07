@@ -1,9 +1,16 @@
-from datetime import datetime, timezone
-from flask import Flask, jsonify, request, render_template, send_from_directory
-from domain_checker import check_domain_status
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request, render_template, session, redirect, url_for
+from domain_checker import check_domain_status, check_domains_concurrently
 from logs import logger
+from user_management import register_user, login_user
+from data_manager import get_user_domains, save_user_domains
+import os
 
-app = Flask(__name__, static_url_path='', static_folder='static')
+
+load_dotenv()
+app = Flask(__name__, template_folder= 'templates', static_folder='static')
+app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
+
 
 @app.route('/health', methods=['GET'])
 def healthcheck():
@@ -12,35 +19,75 @@ def healthcheck():
 
 @app.route('/')
 def main():
-    logger.info("serving main.html")
+    if 'username' in session:
+        return redirect(url_for('dashboard'))
+    logger.info("serving main.html for anonymous user")
     return render_template('main.html')
 
 
-@app.route('/time')
-def time():
-    now_time = datetime.now().strftime("%b %d %H:%M:%S %Y %Z")
-    logger.info("serving sergei.html") 
-    return send_from_directory('static', 'sergei.html')
-    # return now_time
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username =request.form['username']
+        password = request.form['password']
+        success, message = register_user(username, password)
+        if success:
+            return redirect(url_for('login'))
+        else:
+            return render_template('register.html', error=message)
+    return render_template('register.html')
 
 
-@app.route('/check_domain', methods=['GET'])
-def get_domain_health():
-    domain = request.args.get('domain')
-    if not domain:
-        logger.warning("request received without a domain parameter.")
-        return jsonify({'error': 'domain parameter is required'}), 400
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        success, message = login_user(username, password)
+        if success:
+            session['username'] = username
+            return redirect(url_for('dashboard'))
+        else:
+            return render_template('login.html', error=message)
+    return render_template('login.html')
 
-    logger.info(f"received request to check domain: {domain}")
-    report = check_domain_status(domain)
 
-    # add the health status check
-    if report['status_code'] == 200 and report['certificate_status'] == 'valid':
-        report['healthy'] = True
-    else:
-        report['healthy'] = False
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('main'))
 
-    return jsonify(report)
+@app.route('/dashboard')
+def dashboard():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    username = session['username']
+    user_domains_list = get_user_domains(username)
+    domain_names = [d['domain'] for d in user_domains_list]
+    #here using concurrent checker for performance
+    domain_statuses = check_domains_concurrently(domain_names)
+    return render_template('dashboard.html', domains=domain_statuses)
+
+
+
+@app.route('/add_domain', methods= ['POST'])
+def add_domain():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    username = session['username']
+    domain = request.form['domain']
+
+    #importing functions from data_manager.py 
+    domains = get_user_domains(username)
+    domains.append({'domain': domain, 'status': 'pending', 'ssl_expiration': 'N/A', 'ssl_issuer': 'N/A'})
+    save_user_domains(username, domains)
+
+    return redirect(url_for('dashboard'))
+
+    
 
 
 if __name__ == "__main__":

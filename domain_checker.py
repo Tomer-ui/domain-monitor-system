@@ -1,4 +1,5 @@
 import requests
+from concurrent.futures import ThreadPoolExecutor
 import ssl
 import socket
 from datetime import datetime
@@ -73,3 +74,8 @@ def check_domain_status(domain: str):
             
     logger.info(f"Successfully checked {domain}. Status: {result['status_code']}.")
     return result
+
+def check_domains_concurrently(domains):
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(executor.map(check_domain_status, domains))
+        return results
