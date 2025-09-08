@@ -87,7 +87,47 @@ def add_domain():
 
     return redirect(url_for('dashboard'))
 
+
+
+@app.route('/bulk_upload', methods=['POST'])
+def bulk_upload():
+    #1.ensure the user is logged in
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    #2.get the file from the request
+    file = request.files.get('file')
+
+    #3.validation if a file was submited,
+    #  & has the right extension
+    if not file or file.filename == '':
+        logger.error(f"problem with file, please check again")
+        return redirect(url_for('dashboard'))
     
+    if not file.filename.endswith('.txt'):
+        return "error: please upload a valid .txt file.", 400
+    
+    #4.process file
+    username = session['username']
+    domains = get_user_domains(username)
+    #read file line by line
+    for line in file.readlines():
+        #the lines are read as bytes, we need to decode them to strings
+        #.strip() removes any whitespace or newline chars.
+        domain = line.decode('utf-8').strip() #goooood luck stack overflow this !@#!$@ ty chat.
+        #add the domain if the line isnt empty
+        # & if the domain is "UNIQ"
+        if domain not in [d['domain']for d in domains]:
+            domains.append({
+                'domain': domain,
+                'status': 'pending',
+                'ssl_expiration': 'N/A',
+                'ssl_issuer': 'N/A'
+            })
+    #5.save the updated list of domains
+    save_user_domains(username, domains)
+    #6.redirect back to the dashboard to see new added domains. ^_^
+    return redirect(url_for('dashboard'))
+
 
 
 if __name__ == "__main__":
