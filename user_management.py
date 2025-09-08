@@ -24,7 +24,7 @@ def register_user(username, password):
     except (IOError, json.JSONDecodeError) as e:
         logger.error(f"error reading {USERS_FILE}: {e}")
         return False, "server error during registration"
-
+   
     # .2. check if user exists
     if username in [user['username'] for user in users]:
         return False, "username already exists"
