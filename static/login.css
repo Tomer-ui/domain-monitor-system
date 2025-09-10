@@ -1,0 +1,172 @@
+:root {
+    --color-primary: #007bff;
+    --color-error: #dc3545;
+    --color-success: #28a745;
+    --background-color: #f4f4f9;
+    --text-color: #333;
+    --header-bg: #ffffff;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    outline: none;
+    border: none;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: 0.2s linear;
+    text-transform: capitalize;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    background: var(--background-color);
+    color: var(--text-color);
+}
+
+.btn {
+    margin-top: 1rem;
+    padding: 10px 20px;
+    color: #fff;
+    background: var(--color-primary);
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+/* Header */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: 1rem 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--header-bg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header .logo {
+    font-size: 22px;
+    font-weight: bolder;
+    color: var(--text-color);
+}
+
+.header .logo i {
+    color: var(--color-primary);
+    padding-right: 0.5rem;
+}
+
+.header .navbar a {
+    font-size: 1rem;
+    margin: 0 1rem;
+    color: var(--text-color);
+}
+
+.header .navbar a:hover {
+    color: var(--color-primary);
+}
+
+.header .btn {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    font-size: 14px;
+    padding: 8px 16px;
+    margin-top: 0;
+}
+
+/* Main Content Section */
+.main-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding-top: 60px; /* To offset fixed header */
+}
+
+.form-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 1rem;
+    padding: 2rem;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.form h3 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    color: var(--text-color);
+}
+
+.form__input-group {
+    margin-bottom: 1rem;
+}
+
+.form__input {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    box-sizing: border-box;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background: #f9f9f9;
+    font-size: 1rem;
+}
+
+.form__input:focus {
+    border-color: var(--color-primary);
+    background: #fff;
+}
+
+.form__button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    color: #ffffff;
+    background: var(--color-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.form__button:hover {
+    opacity: 0.9;
+}
+
+.form__text {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.form__link {
+    color: var(--color-primary);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.form__link:hover {
+    text-decoration: underline;
+}
+
+.form__message {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.form__message--error {
+    color: var(--color-error);
+}
