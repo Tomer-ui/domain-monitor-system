@@ -1,0 +1,117 @@
+:root{
+  --bg: #0b1020;
+  --card: #111730;
+  --muted: #7c86a2;
+  --text: #e8eeff;
+  --text-weak:#bdc6dd;
+  --primary:#6b8bff;
+  --primary-2:#3e64ff;
+  --success:#22c55e;
+  --danger:#ef4444;
+  --warning:#f59e0b;
+  --border: #233052;
+  --chip:#1a2240;
+}
+html,body{height:100%}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+  color:var(--text); background:linear-gradient(180deg,#070b18 0%, #0b1020 100%);
+}
+a{color:inherit; text-decoration:none}
+
+/* Layout */
+.app{ display:grid; grid-template-columns: 260px 1fr; grid-template-rows: 64px 1fr; grid-template-areas: "sidebar header" "sidebar main"; min-height:100vh; }
+header{ grid-area:header; display:flex; align-items:center; gap:12px; padding:0 20px; border-bottom:1px solid var(--border); background:rgba(9,14,30,.7); backdrop-filter:saturate(1.2) blur(10px); position:sticky; top:0; z-index:5; }
+.sidebar{ grid-area:sidebar; border-right:1px solid var(--border); padding:16px; position:sticky; top:0; height:100vh; overflow:auto; background:rgba(10,14,28,.65); backdrop-filter: blur(10px); }
+main{ grid-area:main; padding:24px; max-width:1600px; width:100%; margin-inline:auto; }
+
+/* Sidebar */
+.brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px; margin-bottom:16px}
+.brand i{color:var(--primary)}
+.nav{display:flex; flex-direction:column; gap:4px; margin-top:12px}
+.nav a{padding:10px 12px; border-radius:12px; color:var(--text-weak); display:flex; align-items:center; gap:10px}
+.nav a.active, .nav a:hover{background:var(--chip); color:var(--text)}
+.sidebar .small{color:var(--muted); font-size:12px; margin:18px 8px 6px}
+
+/* Header */
+.spacer{flex:1}
+.search{ position:relative;}
+.search input{ background:#0d1530; color:var(--text); border:1px solid var(--border); border-radius:12px; padding:10px 12px 10px 36px; width:320px; outline:none}
+.search i{ position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted)}
+.hd-actions{display:flex; align-items:center; gap:10px}
+.btn{ background:var(--primary); color:white; border:none; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:600}
+.btn.secondary{background:#121a36; border:1px solid var(--border); color:var(--text-weak)}
+.btn.sm{ padding:8px 10px; font-size:12px; border-radius:10px }
+
+/* Cards */
+.grid{ display:grid; gap:16px}
+.grid.stats{ grid-template-columns: repeat(4, minmax(220px,1fr)); }
+.card{ background:linear-gradient(180deg, rgba(28,37,76,.6), rgba(14,19,39,.6)); border:1px solid var(--border); border-radius:18px; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.card h4{ margin:4px 0 4px; font-size:15px; color:var(--text-weak); font-weight:600}
+.card-chart{ margin-top:16px }
+.metric{ font-size:26px; font-weight:800; letter-spacing:.2px}
+.metric small{ font-size:12px; color:var(--muted); font-weight:600}
+.trend{ font-size:12px; color:var(--muted)}
+.trend.up{ color:var(--success)}
+.trend.down{ color:var(--danger)}
+
+/* Filters + table */
+.toolbar{ display:flex; gap:10px; align-items:center; margin:6px 0 12px}
+.chip{ background:var(--chip); color:var(--text-weak); border:1px solid var(--border); padding:8px 10px; border-radius:12px; font-size:13px; cursor:pointer}
+.chip.active{ background:rgba(107,139,255,.12); color:#cfd8ff; border-color:rgba(107,139,255,.35)}
+
+table{ width:100%; border-collapse:separate; border-spacing:0 10px}
+thead th{ text-align:left; color:var(--muted); font-size:12px; font-weight:600; padding:4px 12px}
+tbody tr{ background: linear-gradient(180deg, rgba(19,25,52,.85), rgba(13,18,39,.85)); box-shadow: 0 8px 24px rgba(0,0,0,.25); border:1px solid var(--border);}
+tbody td{ padding:14px 12px; border-top:1px solid var(--border); border-bottom:1px solid var(--border)}
+tbody td:first-child{ border-left:1px solid var(--border); border-radius:12px 0 0 12px}
+tbody td:last-child{ border-right:1px solid var(--border); border-radius:0 12px 12px 0}
+
+.status{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; font-weight:600; font-size:12px}
+.status i{font-size:10px}
+.status.up{ background:rgba(34,197,94,.12); color:#bbf7d0; border:1px solid rgba(34,197,94,.35)}
+.status.down{ background:rgba(239,68,68,.12); color:#fecaca; border:1px solid rgba(239,68,68,.35)}
+.status.warn{ background:rgba(245,158,11,.12); color:#fde68a; border:1px solid rgba(245,158,11,.35)}
+
+/* Drawer */
+.drawer{ position:fixed; top:0; right:-520px; width:520px; height:100%; background:rgba(10,14,28,.98); border-left:1px solid var(--border); box-shadow:-10px 0 40px rgba(0,0,0,.3); transition:right .3s ease; z-index:60; overflow:auto}
+.drawer.open{ right:0 }
+.drawer header{ position:sticky; top:0; background:rgba(10,14,28,.9); display:flex; gap:10px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border) }
+.drawer-title{ font-weight:800; letter-spacing:.3px }
+.drawer .body{ padding:18px}
+.drawer-grid{ grid-template-columns: 1fr 1fr; gap:16px }
+.kv{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px}
+.kv .k{ font-size:12px; color:var(--muted)}
+.kv .v{ font-weight:700}
+.kv-wide{ grid-column:1 / -1 }
+.drawer-lists{ grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px }
+.list{ list-style:none; padding:0; margin:0; display:grid; gap:8px }
+.notes{ color:var(--text-weak); font-size:14px }
+
+/* Footer */
+footer{ color:var(--muted); font-size:12px; margin-top:16px; text-align:center }
+
+/* Responsive */
+@media (max-width: 1100px){
+  .app{ grid-template-columns: 86px 1fr }
+  .sidebar .nav a span{ display:none }
+  .sidebar .small{ display:none }
+  .sidebar{ padding:12px }
+  .grid.stats{ grid-template-columns: repeat(2,1fr) }
+  .search input{ width:220px }
+}
+@media (max-width: 740px){
+  header{ padding:8px 12px }
+  .search{ display:none }
+  .grid.stats{ grid-template-columns:1fr }
+  main{ padding:16px }
+  .toolbar{ flex-wrap:wrap }
+  .app{ grid-template-columns: 1fr; grid-template-areas: "header" "main" }
+  .sidebar{ display:none }
+}
+
+/* RTL support */
+.rtl-toggle{ margin-left:6px }
+html[dir="rtl"] body{ font-family: "Heebo", Inter, system-ui }
+html[dir="rtl"] thead th, html[dir="rtl"] td{ text-align:right }
