@@ -1,18 +1,22 @@
-// --- Sample data (replace with your API)
-const sampleDomains = [
-  { domain:"example.com", status:"up", uptime:99.98, ssl:"2025-10-20", issuer:"Let's Encrypt R3", dns:["93.184.216.34"], registrar:"IANA", tags:["prod"] },
-  { domain:"desta-interfaces.net", status:"up", uptime:99.91, ssl:"2025-09-25", issuer:"ZeroSSL", dns:["203.0.113.52","203.0.113.53"], registrar:"Namecheap", tags:["prod","edge"] },
-  { domain:"lab.local", status:"down", uptime:96.12, ssl:null, issuer:"—", dns:["192.0.2.44"], registrar:"—", tags:["lab"] },
-  { domain:"api.domainmonitor.io", status:"up", uptime:99.73, ssl:"2025-09-18", issuer:"DigiCert TLS RSA", dns:["198.51.100.17"], registrar:"Google", tags:["prod","api"] },
-  { domain:"staging.domainmonitor.io", status:"up", uptime:98.66, ssl:"2025-11-12", issuer:"Let's Encrypt R3", dns:["198.51.100.77"], registrar:"Cloudflare", tags:["staging"] },
-  { domain:"myshop.example", status:"up", uptime:99.22, ssl:"2025-09-29", issuer:"Sectigo", dns:["203.0.113.90"], registrar:"GoDaddy", tags:["prod","ecom"] }
-];
+// MODIFICATION: Use backend data passed from the template
+// This transforms the data from app.py into the format the frontend expects.
+const domainsData = userDomains.map(d => ({
+    domain: d.domain,
+    // Convert status like "live. status code 200" to "up" or "down"
+    status: d.status.startsWith('live') ? 'up' : 'down',
+    // Uptime is not in backend data, so we use a placeholder
+    uptime: 99.9,
+    ssl: d.ssl_expiration,
+    issuer: d.ssl_issuer,
+    // Tags are not in backend data, placeholder
+    tags: []
+}));
 
 // --- Utilities ---
-const $ = sel => document.querySelector(sel);
+const $ = sel => document.querySelector(sel);      
 const $$ = sel => Array.from(document.querySelectorAll(sel));
 const fmtPct = v => (Math.round(v*100)/100).toFixed(2);
-const daysUntil = (iso) => { if(!iso) return null; const d=(new Date(iso)-new Date())/(1000*60*60*24); return Math.floor(d); };
+const daysUntil = (iso) => { if(!iso || iso === 'N/A') return null; const d=(new Date(iso)-new Date())/(1000*60*60*24); return Math.floor(d); };
 
 // --- Populate stats ---
 function refreshStats(rows){
@@ -31,26 +35,35 @@ let query = '';
 
 function renderTable(){
   tbody.innerHTML = '';
-  const rows = sampleDomains.filter(r => {
+  // MODIFICATION: Use 'domainsData' instead of 'sampleDomains'
+  const rows = domainsData.filter(r => {
     const matchQuery = !query || (r.domain+" "+(r.registrar||'')+" "+(r.tags||[]).join(' ')).toLowerCase().includes(query);
     const matchFilter = (
       currentFilter==='all' ||
-      (currentFilter==='up' && r.status==='up') ||
+      (currentFilter==='up' && r.status==='up') || 
       (currentFilter==='down' && r.status==='down') ||
       (currentFilter==='warn' && (daysUntil(r.ssl) !== null && daysUntil(r.ssl) <= 14)) ||
-      (currentFilter.startsWith('tag:') && (r.tags||[]).includes(currentFilter.split(':')[1]))
+      (currentFilter.startsWith('tag:') && (r.tags||[]).includes(currentFilter.split(':')[1]))        
     );
     return matchQuery && matchFilter;
   });
-  rows.forEach(r => tbody.appendChild(rowEl(r)));
+  rows.forEach(r => tbody.appendChild(rowEl(r)));  
   refreshStats(rows);
 }
 
 function rowEl(r){
   const tr = document.createElement('tr');
   const sslDays = daysUntil(r.ssl);
-  const sslLabel = r.ssl ? `${r.ssl} (${sslDays}d)` : '—';
-  const sslClass = r.ssl ? (sslDays<=14 ? 'warn' : 'up') : '';
+  let sslLabel, sslClass;
+
+  if (sslDays === null) {
+      sslLabel = '—';
+      sslClass = '';
+  } else {
+      sslLabel = `${r.ssl} (${sslDays}d)`;
+      sslClass = sslDays <= 14 ? 'warn' : 'up';
+  }
+
   tr.innerHTML = `
     <td>
       <div style="display:flex; align-items:center; gap:10px">
@@ -75,8 +88,9 @@ tbody.addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-action]');
   if(!btn) return;
   const domain = btn.dataset.domain;
-  const row = sampleDomains.find(x=>x.domain===domain);
-  if(btn.dataset.action==='view') openDrawer(row);
+  // MODIFICATION: Use 'domainsData'
+  const row = domainsData.find(x=>x.domain===domain);
+  if(btn.dataset.action==='view') openDrawer(row); 
   if(btn.dataset.action==='refresh') simulateRefresh(btn, row);
 });
 
@@ -84,8 +98,8 @@ function openDrawer(row){
   $('#drawerTitle').textContent = row.domain;
   $('#dUptime').textContent = fmtPct(row.uptime)+"%";
   $('#dStatus').textContent = row.status.toUpperCase();
-  $('#dSSL').textContent = row.ssl ? `${row.ssl}  (in ${daysUntil(row.ssl)} days)` : '—';
-  $('#dIssuer').textContent = row.issuer || '—';
+  $('#dSSL').textContent = row.ssl && row.ssl !== 'N/A' ? `${row.ssl}  (in ${daysUntil(row.ssl)} days)` : '—';
+  $('#dIssuer').textContent = row.issuer || '—'; 
   $('#dDNS').textContent = (row.dns||[]).join(', ');
   const checks = [
     {t:'HTTP 200', when:'2m ago'},
@@ -95,7 +109,7 @@ function openDrawer(row){
   const ul = $('#dChecks');
   ul.innerHTML = '';
   checks.forEach(c=>{
-    const li = document.createElement('li');
+    const li = document.createElement('li');       
     li.innerHTML = `<div style="display:flex; justify-content:space-between; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px"><span>${c.t}</span><span style="color:var(--muted)">${c.when}</span></div>`;
     ul.appendChild(li);
   })
@@ -112,10 +126,13 @@ $$('.chip').forEach(chip=> chip.addEventListener('click', ()=>{
 
 $('#searchInput').addEventListener('input', (e)=>{ query = e.target.value.trim().toLowerCase(); renderTable(); });
 
-$('#addBtn').addEventListener('click', ()=>{
+// NOTE: This "Add Domain" button only adds to the frontend view.
+// For a persistent add, it should be a form that POSTs to your '/add_domain' route.
+$('#addBtn').addEventListener('click', ()=>{       
   const d = prompt('Add domain (e.g., mydomain.com)');
   if(!d) return;
-  sampleDomains.push({ domain:d, status:'up', uptime:99.9, ssl:null, issuer:'—', dns:['203.0.113.10'], registrar:'—', tags:['new'] });
+  // MODIFICATION: Use 'domainsData'
+  domainsData.push({ domain:d, status:'up', uptime:99.9, ssl:'N/A', issuer:'—', dns:[], tags:['new'] });
   renderTable();
 });
 
@@ -152,7 +169,7 @@ function simulateRefresh(btn, row){
 
 // --- Init ---
 (function init(){
-  const yearEl = document.getElementById('year');
+  const yearEl = document.getElementById('year');  
   if (yearEl) yearEl.textContent = new Date().getFullYear();
   renderTable();
 })();

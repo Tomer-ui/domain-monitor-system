@@ -20,7 +20,7 @@ def healthcheck():
 @app.route('/')
 def main():
     if 'username' in session:
-        return redirect(url_for('deshboard'))
+        return redirect(url_for('dashboard'))
     logger.info("serving lgoin .html for anonymous user")
     return render_template('login.html')
 
@@ -49,7 +49,7 @@ def login():
             session['username'] = username
             #NEW - "flash" a success message before redirect.
             flash('login successful!', 'success')
-            return redirect(url_for('deshboard'))
+            return redirect(url_for('dashboard'))
         else:
             flash(message, 'error')
             return render_template('login.html', error=message)
@@ -64,19 +64,19 @@ def logout():
     return redirect(url_for('main'))
 
 
-@app.route('/deshboard')
-def deshboard():
+@app.route('/dashboard')
+def dashboard():
     if 'username' not in session:
         return redirect(url_for('login'))
     
     username = session['username']
-    logger.info(f"generating deshboard for user: {username}.")
+    logger.info(f"generating dashboard for user: {username}.")
     #1.get the current list of domains from user file.
     domains_to_check = get_user_domains(username)
     domain_names = [d['domain'] for d in domains_to_check]
 
     if not domain_names:
-        return render_template('deshboard.html', username=username, results=[])
+        return render_template('dashboard.html', username=username, results=[])
     
     #2.run the concurrent check to get freash data
     fresh_check_results = check_domains_concurrently(domain_names)
@@ -101,7 +101,7 @@ def deshboard():
     #4. save fresh data. overwrite old file.
     save_user_domains(username, final_report)
     #5. render the page using the data.
-    return render_template('deshboard.html', username=username, results = final_report)
+    return render_template('dashboard.html', username=username, results = final_report)
 
 
 
@@ -125,7 +125,7 @@ def add_domain():
             })
             save_user_domains(username, current_domains)
 
-    return redirect(url_for('deshboard'))
+    return redirect(url_for('dashboard'))
 
 
 
@@ -141,7 +141,7 @@ def bulk_upload():
     #  & has the right extension
     if not file or file.filename == '':
         logger.error(f"problem with file, please check again")
-        return redirect(url_for('deshboard'))
+        return redirect(url_for('dashboard'))
     
     if not file.filename.endswith('.txt'):
         return "error: please upload a valid .txt file.", 400
@@ -170,7 +170,7 @@ def bulk_upload():
     #5.save the updated list of domains
     save_user_domains(username, current_domains)
     #6.redirect back to the deshboard to see new added domains. ^_^
-    return redirect(url_for('deshboard'))
+    return redirect(url_for('dashboard'))
 
 
 @app.route('/remove_domain', methods=['POST'])
@@ -183,7 +183,7 @@ def remove_domain():
 
     if not domain_to_remove:
         flash('invalid request.' , 'error')
-        return redirect(url_for('deshboard'))
+        return redirect(url_for('dashboard'))
     
     #call data_manger.py to handle deletion
     success = remove_user_domain(username, domain_to_remove)
@@ -193,7 +193,7 @@ def remove_domain():
     else:
         flash(f"domain '{domain_to_remove}' was not found in your list.", 'warning')
     #time to go back home.
-    return redirect(url_for('deshboard'))
+    return redirect(url_for('dashboard'))
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port="8080")

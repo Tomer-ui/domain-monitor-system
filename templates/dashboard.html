@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Domain Monitor — deshboard</title>
+  <title>Domain Monitor — dashboard</title>      
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  
-  <!-- Chart.js (optional for uptime graph) -->
+
+  <!-- Chart.js (optional for uptime graph) -->    
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <!-- App styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='deshboard.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 <body>
 <div class="app">
@@ -26,11 +26,11 @@
   <header>
     <div class="search">
       <i class="fas fa-search"></i>
-      <input id="searchInput" placeholder="Search domain, registrar, tag…" />
+      <input id="searchInput" placeholder="Search domain, registrar, tagâ€¦" />
     </div>
     <div class="spacer"></div>
     <div class="hd-actions">
-      <button class="btn secondary" id="rtlBtn" title="Toggle RTL/LTR"><i class="fas fa-language"></i> <span class="rtl-toggle">RTL</span></button>
+      <button class="btn secondary" id="rtlBtn" title="Toggle RTL/LTR"><i class="fas fa-language"></i> <span class="rtl-toggle">RTL</span></button>      
       <button class="btn secondary" id="darkBtn" title="Toggle dark mode"><i class="fas fa-moon"></i></button>
       <button class="btn" id="addBtn"><i class="fas fa-plus"></i> Add Domain</button>
     </div>
@@ -50,9 +50,9 @@
         <div class="trend up"><i class="fas fa-arrow-up"></i> Stable</div>
       </div>
       <div class="card">
-        <h4>SSL Certificates expiring ≤ 14d</h4>
-        <div class="metric" id="statSSL">—</div>
-        <div class="trend" id="trendSSL">Auto‑check every 6h</div>
+        <h4>SSL Certificates expiring â‰¤ 14d</h4> 
+        <div class="metric" id="statSSL">—</div> 
+        <div class="trend" id="trendSSL">Autoâ€‘check every 6h</div>
       </div>
       <div class="card">
         <h4>Open Incidents</h4>
@@ -69,7 +69,7 @@
       <div class="chip active" data-filter="all"><i class="fas fa-layer-group"></i> All</div>
       <div class="chip" data-filter="up"><i class="fas fa-circle"></i> Up</div>
       <div class="chip" data-filter="down"><i class="fas fa-circle"></i> Down</div>
-      <div class="chip" data-filter="warn"><i class="fas fa-exclamation-triangle"></i> SSL Soon</div>
+      <div class="chip" data-filter="warn"><i class="fas fa-exclamation-triangle"></i> SSL Soon</div> 
       <div class="chip" data-filter="tag:prod"><i class="fas fa-tag"></i> prod</div>
       <div class="chip" data-filter="tag:lab"><i class="fas fa-tag"></i> lab</div>
     </div>
@@ -96,21 +96,21 @@
     <button class="btn secondary sm" id="closeDrawer" title="Close"><i class="fas fa-arrow-right"></i></button>
     <div class="drawer-title" id="drawerTitle">Domain</div>
     <div class="spacer"></div>
-    <button class="btn sm" id="btnRecheck"><i class="fas fa-sync"></i> Re‑check</button>
+    <button class="btn sm" id="btnRecheck"><i class="fas fa-sync"></i> Reâ€‘check</button>
   </header>
   <div class="body">
     <div class="grid drawer-grid">
-      <div class="kv"><div class="k">Uptime (30d)</div><div class="v" id="dUptime">—</div></div>
+      <div class="kv"><div class="k">Uptime (30d)</div><div class="v" id="dUptime">—</div></div>    
       <div class="kv"><div class="k">Status</div><div class="v" id="dStatus">—</div></div>
-      <div class="kv"><div class="k">SSL Not After</div><div class="v" id="dSSL">—</div></div>
+      <div class="kv"><div class="k">SSL Not After</div><div class="v" id="dSSL">—</div></div>      
       <div class="kv"><div class="k">Issuer</div><div class="v" id="dIssuer">—</div></div>
-      <div class="kv kv-wide"><div class="k">DNS (A)</div><div class="v" id="dDNS">—</div></div>
+      <div class="kv kv-wide"><div class="k">DNS (A)</div><div class="v" id="dDNS">—</div></div>    
     </div>
 
     <div class="grid drawer-lists">
       <div class="card">
         <h4>Recent Checks</h4>
-        <ul id="dChecks" class="list"></ul>
+        <ul id="dChecks" class="list"></ul>        
       </div>
       <div class="card">
         <h4>Notes</h4>
@@ -121,6 +121,10 @@
 </aside>
 
 <!-- App scripts -->
-<script src="{{ url_for('static', filename='deshboard.js') }}"></script>
+<!-- MODIFICATION: Pass data from Flask backend to JavaScript -->
+<script>
+    const userDomains = {{ results | tojson }};
+</script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html>
