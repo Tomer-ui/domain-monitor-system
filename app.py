@@ -12,85 +12,110 @@ app = Flask(__name__, template_folder= 'templates', static_folder='static')
 app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 
 
-@app.route('/health', methods=['GET'])
-def healthcheck():
-    return jsonify({'status': 'healthy'}), 200
-
+# =================================================================
+# MODIFICATION: HTML Page Serving Routes
+# These routes now ONLY serve the HTML templates. All data logic is moved
+# to the API endpoints below.
+# ==================================================================
 
 @app.route('/')
-def main():
+def main_page():
+    # If the user has a session, show them the dashboard, otherwise the login page.
     if 'username' in session:
-        return redirect(url_for('dashboard'))
-    logger.info("serving lgoin .html for anonymous user")
-    return render_template('login.html')
+        return redirect(url_for('dashboard_page'))
+    return redirect(url_for('login_page'))
 
-
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username =request.form['username']
-        password = request.form['password']
-        success, message = register_user(username, password)
-        if success:
-            return redirect(url_for('login'))
-        else:
-            return render_template('register.html', error=message)
+@app.route('/register')
+def register_page():
     return render_template('register.html')
 
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        success, message = login_user(username, password)
-        if success:
-            session['username'] = username
-            #NEW - "flash" a success message before redirect.
-            flash('login successful!', 'success')
-            return redirect(url_for('dashboard'))
-        else:
-            flash(message, 'error')
-            return render_template('login.html', error=message)
+@app.route('/login')
+def login_page():
     return render_template('login.html')
 
-
-
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
-    flash('you have been logged out.', 'info') #NEW - flash an info message.
-    return redirect(url_for('main'))
-
-
 @app.route('/dashboard')
-def dashboard():
+def dashboard_page():
+    # This route is now protected; it will only serve the dashboard if the user is logged in.
     if 'username' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('login_page'))
+    # The template is rendered without data; the frontend JS will fetch it.
+    return render_template('dashboard.html', username=session['username'])
+
+
+# =================================================================
+# MODIFICATION: New JSON API Endpoints
+# These endpoints fulfill the LLD requirement for a JSON-based API.
+# =================================================================
+
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    data = request.get_json()
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({"success": False, "message": "Username and password are required."}), 400
+    
+    username = data['username']
+    password = data['password']
+    
+    success, message = register_user(username, password)
+    
+    if success:
+        return jsonify({"success": True, "message": "Registration successful"}), 201
+    else:
+        # Common error for existing user is a conflict
+        status_code = 409 if "exists" in message else 500
+        return jsonify({"success": False, "message": message}), status_code
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({"success": False, "message": "Username and password are required."}), 400
+
+    username = data['username']
+    password = data['password']
+
+    success, message = login_user(username, password)
+
+    if success:
+        session['username'] = username
+        return jsonify({"success": True, "message": "Login successful"}), 200
+    else:
+        # Invalid credentials is an unauthorized error
+        return jsonify({"success": False, "message": message}), 401
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    session.pop('username', None)
+    return jsonify({"success": True, "message": "You have been logged out."}), 200
+
+@app.route('/api/session', methods=['GET'])
+def api_session():
+    # A new endpoint for the frontend to check if a user is logged in.
+    if 'username' in session:
+        return jsonify({"loggedIn": True, "username": session['username']}), 200
+    else:
+        return jsonify({"loggedIn": False}), 401
+
+@app.route('/api/domains', methods=['GET'])
+def api_get_domains():
+    if 'username' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
     
     username = session['username']
-    logger.info(f"generating dashboard for user: {username}.")
-    #1.get the current list of domains from user file.
+    logger.info(f"API: fetching and checking domains for user: {username}.")
+    
     domains_to_check = get_user_domains(username)
     domain_names = [d['domain'] for d in domains_to_check]
 
     if not domain_names:
-        return render_template('dashboard.html', username=username, results=[])
-    
-    #2.run the concurrent check to get freash data
+        return jsonify([]) # Return empty list if no domains
+
     fresh_check_results = check_domains_concurrently(domain_names)
 
-    #3.format the data into desired structure
     final_report =[]
     for result in fresh_check_results:
         status_code = result.get('status_code')
-        if status_code == 200:
-            status_text = f"live. status code {status_code}"
-        else:
-            status_text = f"unavailable. status code {status_code}"
-
-        #here we "map" the check output to the desired json structure
+        status_text = f"Live. Status code {status_code}" if status_code == 200 else f"Unavailable. Status code {status_code}"
         formatted_result = {
             "domain": result.get('domain'),
             "status": status_text,
@@ -98,102 +123,77 @@ def dashboard():
             "ssl_issuer": result.get('issuer', 'N/A')
         }
         final_report.append(formatted_result)
-    #4. save fresh data. overwrite old file.
+
     save_user_domains(username, final_report)
-    #5. render the page using the data.
-    return render_template('dashboard.html', username=username, results = final_report)
+    return jsonify(final_report)
 
-
-
-@app.route('/add_domain', methods= ['POST'])
-def add_domain():
+@app.route('/api/add_domain', methods=['POST'])
+def api_add_domain():
     if 'username' not in session:
-        return redirect(url_for('login'))
+        return jsonify({"error": "Unauthorized"}), 401
     
-    username = session['username']
-    domain_to_add = request.form['domain'].strip()
+    data = request.get_json()
+    domain_to_add = data.get('domain', '').strip()
 
-    if domain_to_add:
-        current_domains = get_user_domains(username)
-        if domain_to_add not in [d['domain']for d in current_domains]:
-            #add the new domain
-            current_domains.append({
-                "domain": domain_to_add,
-                "status": "pending check",
-                "ssl_expiration": "N/A",
-                "ssl_issuer": "N/A"
-            })
-            save_user_domains(username, current_domains)
+    if not domain_to_add:
+        return jsonify({"success": False, "message": "Domain cannot be empty."}), 400
 
-    return redirect(url_for('dashboard'))
-
-
-
-@app.route('/bulk_upload', methods=['POST'])
-def bulk_upload():
-    #1.ensure the user is logged in
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    #2.get the file from the request
-    file = request.files.get('file')
-
-    #3.validation if a file was submited,
-    #  & has the right extension
-    if not file or file.filename == '':
-        logger.error(f"problem with file, please check again")
-        return redirect(url_for('dashboard'))
-    
-    if not file.filename.endswith('.txt'):
-        return "error: please upload a valid .txt file.", 400
-    
-    #4.process file
     username = session['username']
     current_domains = get_user_domains(username)
-    #making a "set" of domains,
-    existing_domain_names = {d['domain'] for d in current_domains}
 
-    #read file line by line
-    for line in file.readlines():
-        #the lines are read as bytes, we need to decode them to strings
-        #.strip() removes any whitespace or newline chars.
-        domain = line.decode('utf-8').strip() #goooood luck stack overflow this !@#!$@ ty chat.
-        #add the domain if the line isnt empty & if the domain is "UNIQ"
-        if domain and domain not in existing_domain_names:
-            current_domains.append({
-                "domain": domain,
-                "status": "pending check",
-                "ssl_expiration": "N/A",
-                "ssl_issuer": "N/A"
-            })
+    if domain_to_add in [d['domain'] for d in current_domains]:
+        return jsonify({"success": False, "message": f"Domain '{domain_to_add}' is already in your list."}), 409
 
-            existing_domain_names.add(domain)
-    #5.save the updated list of domains
+    current_domains.append({
+        "domain": domain_to_add, "status": "Pending check", "ssl_expiration": "N/A", "ssl_issuer": "N/A"
+    })
     save_user_domains(username, current_domains)
-    #6.redirect back to the deshboard to see new added domains. ^_^
-    return redirect(url_for('dashboard'))
+    return jsonify({"success": True, "message": f"Domain '{domain_to_add}' was added successfully."}), 201
 
-
-@app.route('/remove_domain', methods=['POST'])
-def remove_domain():
+@app.route('/api/remove_domain', methods=['POST'])
+def api_remove_domain():
     if 'username' not in session:
-        return redirect(url_for('login'))
+        return jsonify({"error": "Unauthorized"}), 401
     
     username = session['username']
-    domain_to_remove = request.form['domain']
+    domain_to_remove = request.get_json().get('domain')
 
     if not domain_to_remove:
-        flash('invalid request.' , 'error')
-        return redirect(url_for('dashboard'))
+        return jsonify({"success": False, "message": "Invalid request."}), 400
     
-    #call data_manger.py to handle deletion
     success = remove_user_domain(username, domain_to_remove)
-    #based on result, 'flash' appropriate message.
     if success:
-        flash(f"domain '{domain_to_remove}' was removed successfully." , 'success')
+        return jsonify({"success": True, "message": f"Domain '{domain_to_remove}' was removed."}), 200
     else:
-        flash(f"domain '{domain_to_remove}' was not found in your list.", 'warning')
-    #time to go back home.
-    return redirect(url_for('dashboard'))
+        return jsonify({"success": False, "message": f"Domain '{domain_to_remove}' not found."}), 404
+
+@app.route('/api/bulk_upload', methods=['POST'])
+def api_bulk_upload():
+    if 'username' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    file = request.files.get('file')
+
+    if not file or file.filename == '' or not file.filename.endswith('.txt'):
+        return jsonify({"success": False, "message": "Please upload a valid .txt file."}), 400
+    
+    username = session['username']
+    current_domains = get_user_domains(username)
+    existing_domain_names = {d['domain'] for d in current_domains}
+    added_count = 0
+
+    for line in file.readlines():
+        domain = line.decode('utf-8').strip()
+        if domain and domain not in existing_domain_names:
+            current_domains.append({
+                "domain": domain, "status": "pending check", "ssl_expiration": "N/A", "ssl_issuer": "N/A"
+            })
+            existing_domain_names.add(domain)
+            added_count += 1
+            
+    save_user_domains(username, current_domains)
+    return jsonify({"success": True, "message": f"Bulk upload complete. Added {added_count} new domains."}), 200
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port="8080")

@@ -25,7 +25,7 @@
             <!-- added method="POST" and action,  -->
             <form class="form" id="loginForm" method="POST" action="{{ url_for('login') }}">
                 <h3>Login to Your Account</h3>
-                <!-- this is for flashing messages from Flask. flask is just epic... -->
+                <!-- this is for flashing messages from Flask. flask is just epic.... -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                   {% if messages %}
                     {% for category, message in messages %}

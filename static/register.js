@@ -28,5 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Registration successful!");
         // You can redirect to the login page after successful registration
         // window.location.href = "login.html";
+        //
     });
 });
