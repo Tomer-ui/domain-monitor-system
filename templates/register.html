@@ -12,39 +12,37 @@
             <i class="fas fa-network-wired"></i> Domain Monitor
         </a>
         <nav class="navbar">
-            <a href="{{ url_for('main') }}">Home</a>
-            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('main_page') }}">Home</a>
+            <a href="{{ url_for('dashboard_page') }}">Dashboard</a>
             <a href="#">|</a>
-            <a href="{{ url_for('login') }}">Login</a>
-            <a href="{{ url_for('register') }}" class="btn">Sign Up</a>
+            <a href="{{ url_for('login_page') }}">Login</a>
+            <a href="{{ url_for('register_page') }}" class="btn">Sign Up</a>
         </nav>
     </header>
 
     <section class="main-content">
         <div class="form-container">
-            <!-- added method="POST" and action. -->
-            <form class="form" id="registerForm" method="POST" action="{{ url_for('register') }}">
+            <!-- MODIFICATION: Removed method="POST" and action. JS will handle the API call. -->
+            <form class="form" id="registerForm">
                 <h3>Create an Account</h3>
-                 <!--  flashing messages from Flask -->
-                {% if error %}
-                    <div class="form__message form__message--error">{{ error }}</div>
-                {% endif %}
+                 <!-- MODIFICATION: This div is now a placeholder for API messages. -->
+                <div id="formMessage" class="form__message"></div>
                 <div class="form__input-group">
-                    <!-- added name="username" -->
                     <input type="text" class="form__input" id="username" name="username" autofocus placeholder="Username">
                     <div class="form__input-error-message"></div>
                 </div>
                 <div class="form__input-group">
-                    <!-- added name="password" -->
                     <input type="password" class="form__input" id="password" name="password" placeholder="Password">
                     <div class="form__input-error-message"></div>
                 </div>
                 <button class="form__button" type="submit">Continue</button>
                 <p class="form__text">
-                    <a class="form__link" href="{{ url_for('login') }}" id="linkLogin">Already have an account? Sign in</a>
+                    <a class="form__link" href="{{ url_for('login_page') }}" id="linkLogin">Already have an account? Sign in</a>
                 </p>
             </form>
         </div>
     </section>
+    <!-- MODIFICATION: Load the updated JS file -->
+    <script src="{{ url_for('static', filename='register.js') }}"></script>
 </body>
 </html>

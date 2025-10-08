@@ -16,7 +16,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 # MODIFICATION: HTML Page Serving Routes
 # These routes now ONLY serve the HTML templates. All data logic is moved
 # to the API endpoints below.
-# ==================================================================
+# =================================================================
 
 @app.route('/')
 def main_page():
