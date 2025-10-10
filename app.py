@@ -14,8 +14,8 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 
 # =================================================================
 # MODIFICATION: HTML Page Serving Routes
-# These routes now ONLY serve the HTML templates. All data logic is moved
-# to the API endpoints below.
+# These routes ONLY serve the HTML templates. All data logic is 
+# in the API endpoints below.
 # =================================================================
 
 @app.route('/')
@@ -43,8 +43,8 @@ def dashboard_page():
 
 
 # =================================================================
-# MODIFICATION: New JSON API Endpoints
-# These endpoints fulfill the LLD requirement for a JSON-based API.
+# MODIFICATION: JSON API Endpoints
+# These endpoints is for the  JSON-based API.
 # =================================================================
 
 @app.route('/api/register', methods=['POST'])
