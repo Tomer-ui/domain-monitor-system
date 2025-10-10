@@ -12,6 +12,7 @@ A web-based application to monitor domain status, SSL certificate validity, and 
 *   Bulk upload domains from a .txt file
 
 ## Project Structure
+```
 .
 ├── .venv/
 ├── data/
@@ -35,6 +36,7 @@ A web-based application to monitor domain status, SSL certificate validity, and 
 ├── requirements.txt
 ├── users.json
 └── user_management.py
+...
 
 ## Setup and Installation
 
