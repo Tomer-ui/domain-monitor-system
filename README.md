@@ -42,8 +42,10 @@ A web-based application to monitor domain status, SSL certificate validity, and 
 
 ### 1. Create a Virtual Environment
 It is recommended to use a virtual environment to manage the project's dependencies.
+
 ### 2. Install Requirements
-With the virtual environment activated, install the necessary packages from the requirements.txt file.
+With the virtual environment activated, install the necessary packages from the requirements.txt file,  pip install -r requirements.txt
+
 ### 3. Run the Application
 Execute the app.py file to start the Flask development server.
 
