@@ -48,5 +48,13 @@ With the virtual environment activated, install the necessary packages from the 
 
 ### 3. Run the Application
 Execute the app.py file to start the Flask development server.
-
 The application will be accessible at http://127.0.0.1:8080 in your web browser.
+
+**How to Use**
+Register: Create a new account through the registration page.
+Login: Log in with your credentials.
+Dashboard: After logging in, you will be redirected to the dashboard, where you can:
+Add a single domain using the input field.
+Bulk upload domains from a .txt file (one domain per line).
+View the status of your monitored domains.
+Remove domains from your list.
