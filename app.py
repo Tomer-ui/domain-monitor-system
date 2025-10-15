@@ -5,6 +5,7 @@ from logs import logger
 from user_management import register_user, login_user
 from data_manager import get_user_domains, save_user_domains, remove_user_domain
 import os
+import re
 
 
 load_dotenv()
@@ -138,6 +139,17 @@ def api_add_domain():
     if not domain_to_add:
         return jsonify({"success": False, "message": "Domain cannot be empty."}), 400
 
+    # This is a validation block .
+    # It uses a regular expression to check for a valid domain name format.
+    domain_regex = re.compile(
+        r'^(?:[a-zA-Z0-9]'
+        r'(?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)'
+        r'+[a-zA-Z]{2,}$' # CORRECTED: Changed {2,6} to {2,}
+    )
+    if not domain_regex.match(domain_to_add):
+        return jsonify({"success": False, "message": "Invalid domain format. Please use a format like 'example.com'."}), 400
+    #end of validation block
+    
     username = session['username']
     current_domains = get_user_domains(username)
 
