@@ -69,4 +69,4 @@ Remove domains from your list.
 
 The backend provides a complete RESTful API for all user and domain management operations. For detailed information on every endpoint, including request formats, response examples, and status codes, please see the full guide:
 
-**[View the Full API Documentation](API_DOCUMENTATION.md)**
+**[View the Full API Documentation](/API_DOCUMENTATION.md)**
