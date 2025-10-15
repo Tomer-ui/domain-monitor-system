@@ -1,6 +1,6 @@
 # Domain Monitor System
 
-flask based web-based application to monitor domain status, SSL certificate validity, via a web interface & a RESTful API 
+flask based web application to monitor domain status, SSL certificate validity & more, via a web interface & a RESTful API 
 
 ## Features
 
