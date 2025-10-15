@@ -65,7 +65,7 @@ View the status of your monitored domains.
 Remove domains from your list.
 
 
-## API Documentation
+### API Documentation
 
 The backend provides a complete RESTful API for all user and domain management operations. For detailed information on every endpoint, including request formats, response examples, and status codes, please see the full guide:
 ```
