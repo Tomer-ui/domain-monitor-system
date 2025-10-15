@@ -3,22 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Domain Monitor — dashboard</title>      
+  <title>Desta Interfaces LTD — dashboard</title>      
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-  <!-- Chart.js (optional for uptime graph) -->    
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-
   <!-- App styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 <body>
 <div class="app">
-  <!-- MODIFICATION: Added a link to logout -->
   <div class="brand"><i class="fas fa-network-wired"></i><span>Domain Monitor</span></div>
 
   <!-- Header -->
@@ -29,7 +25,6 @@
     </div>
     <div class="spacer"></div>
     <div class="hd-actions">
-      <!-- MODIFICATION: New forms for adding domains -->
       <form id="addDomainForm" class="domain-form">
           <input type="text" name="domain" placeholder="example.com" required>
           <button type="submit" class="btn sm"><i class="fas fa-plus"></i> Add</button>
@@ -44,36 +39,22 @@
 
   <!-- Main -->
   <main>
-    <!-- ... (rest of the stats and chart HTML is unchanged) ... -->
     <div class="grid stats">
-        <div class="card">
-          <h4>Total Monitored</h4>
-          <div class="metric" id="statTotal">—</div>
-          <div class="trend" id="trendA">Refreshes on load</div>
-        </div>
-        <div class="card">
-          <h4>Average Uptime (30d)</h4>
-          <div class="metric" id="statUptime">—<small>%</small></div>
-          <div class="trend up"><i class="fas fa-arrow-up"></i> Stable</div>
-        </div>
-        <div class="card">
-          <h4>SSL Certificates expiring â‰¤ 14d</h4> 
-          <div class="metric" id="statSSL">—</div> 
-          <div class="trend" id="trendSSL">Autoâ€‘check every 6h</div>
-        </div>
-        <div class="card">
-          <h4>Open Incidents</h4>
-          <div class="metric" id="statIncidents">0</div>
-          <div class="trend down"><i class="fas fa-check-circle"></i> No active outages</div>
-        </div>
+      <div class="card">
+        <h4>Total Monitored</h4>
+        <div class="metric" id="statTotal">—</div>
+        <div class="trend">A real-time count of your domains</div>
       </div>
-  
-      <div class="card card-chart">
-        <canvas id="uptimeChart" height="100"></canvas>
-      </div>
+    </div>
+
+    <!-- Dynamic title for the domains table -->
+    <h2 class="table-title">{{ username }}'s Domains</h2>
 
     <div class="toolbar">
-        <!-- ... (toolbar HTML is unchanged) ... -->
+      <div class="chip active" data-filter="all"><i class="fas fa-layer-group"></i> All</div>
+      <div class="chip" data-filter="up"><i class="fas fa-circle"></i> Up</div>
+      <div class="chip" data-filter="down"><i class="fas fa-circle"></i> Down</div>
+      <div class="chip" data-filter="warn"><i class="fas fa-exclamation-triangle"></i> SSL Soon</div> 
     </div>
 
     <div class="card">
@@ -84,7 +65,6 @@
             <th>Status</th>
             <th>Certificate (Issuer)</th>
             <th>SSL Expiry</th>
-            <!-- MODIFICATION: Added Actions column for remove button -->
             <th>Actions</th>
           </tr>
         </thead>
@@ -94,10 +74,11 @@
   </main>
 </div>
 
-<!-- ... (Drawer HTML is unchanged) ... -->
+<!-- Drawer (optional for future use) -->
+<aside class="drawer" id="drawer">
+    <!-- drawer content can be added here -->
+</aside>
 
-<!-- App scripts -->
-<!-- MODIFICATION: Removed the script block that passed data from Flask. -->
 <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html>

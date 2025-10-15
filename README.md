@@ -1,6 +1,6 @@
 # Domain Monitor System
 
-A web-based application to monitor domain status, SSL certificate validity, and other relevant information.
+flask based web-based application to monitor domain status, SSL certificate validity, via a web interface & a RESTful API 
 
 ## Features
 
@@ -28,6 +28,7 @@ A web-based application to monitor domain status, SSL certificate validity, and 
 │ ├── login.html
 │ └── register.html
 ├── .gitignore
+├── API_DOCUMENTATION.md
 ├── app.py
 ├── data_manager.py
 ├── domain_checker.log
@@ -39,6 +40,10 @@ A web-based application to monitor domain status, SSL certificate validity, and 
 ...
 
 ## Setup and Installation
+
+### Prerequisites
+
+*   Python 3.8+
 
 ### 1. Create a Virtual Environment
 It is recommended to use a virtual environment to manage the project's dependencies.
@@ -58,3 +63,10 @@ Add a single domain using the input field.
 Bulk upload domains from a .txt file (one domain per line).
 View the status of your monitored domains.
 Remove domains from your list.
+
+
+## API Documentation
+
+The backend provides a complete RESTful API for all user and domain management operations. For detailed information on every endpoint, including request formats, response examples, and status codes, please see the full guide:
+
+**[View the Full API Documentation](API_DOCUMENTATION.md)**

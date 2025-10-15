@@ -1,46 +1,43 @@
-// MODIFICATION: The entire data loading and interaction logic is now handled
-// via API calls using fetch().
-
-// --- Global variables ---
-let domainsData = []; // This will be populated by the API call.
+// Global variables to hold the application state
+let domainsData = []; 
 const tbody = document.querySelector('#domainsTable tbody');
 let currentFilter = 'all';
 let query = '';
 
-// --- Utilities ---
+// Utility functions for selecting elements and calculating dates
 const $ = sel => document.querySelector(sel);      
 const $$ = sel => Array.from(document.querySelectorAll(sel));
-const fmtPct = v => (Math.round(v*100)/100).toFixed(2);
-const daysUntil = (iso) => { if(!iso || iso === 'N/A') return null; const d=(new Date(iso)-new Date())/(1000*60*60*24); return Math.floor(d); };
+const daysUntil = (iso) => { 
+    if(!iso || typeof iso !== 'string' || !iso.match(/^\d{4}-\d{2}-\d{2}$/)) return null; 
+    const d = (new Date(iso) - new Date()) / (1000 * 60 * 60 * 24); 
+    return Math.floor(d); 
+};
 
-// --- API Functions ---
+// =================================================================
+// API Functions
+// =================================================================
+
 async function fetchDomains() {
     try {
         const response = await fetch('/api/domains');
         if (!response.ok) {
-            // If the session expired or is invalid, redirect to login.
+            // If session expired or is invalid, redirect to login page
             if (response.status === 401) window.location.href = '/login';
             throw new Error('Failed to fetch domains');
         }
         const data = await response.json();
-        // Transform backend data to frontend format
+        // Transform the raw API data into the format the frontend uses
         domainsData = data.map(d => ({
             domain: d.domain,
             status: d.status.startsWith('Live') ? 'up' : 'down',
-            uptime: 99.9, // Placeholder
             ssl: d.ssl_expiration,
             issuer: d.ssl_issuer,
-            tags: [] // Placeholder
         }));
         renderTable();
     } catch (error) {
         console.error("Error fetching domains:", error);
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--danger);">Could not load domain data.</td></tr>`;
     }
-}
-
-async function addDomain(domain) {
-    // ... (implementation for add domain API call)
 }
 
 async function removeDomain(domain) {
@@ -53,8 +50,7 @@ async function removeDomain(domain) {
         });
         const result = await response.json();
         if (response.ok) {
-            console.info(result.message);
-            fetchDomains(); // Refresh the table
+            fetchDomains(); // Refresh the table on success
         } else {
             alert(`Error: ${result.message}`);
         }
@@ -64,17 +60,20 @@ async function removeDomain(domain) {
     }
 }
 
-// --- Table rendering ---
+// =================================================================
+// Table and UI Rendering
+// =================================================================
+
 function renderTable(){
-    // ... (This function remains mostly the same, but now uses the global domainsData)
     tbody.innerHTML = '';
+    // Filter the global data based on current search query and filter chips
     const rows = domainsData.filter(r => {
         const matchQuery = !query || (r.domain).toLowerCase().includes(query);
         const matchFilter = (
-            currentFilter==='all' ||
-            (currentFilter==='up' && r.status==='up') || 
-            (currentFilter==='down' && r.status==='down') ||
-            (currentFilter==='warn' && (daysUntil(r.ssl) !== null && daysUntil(r.ssl) <= 14))
+            currentFilter === 'all' ||
+            (currentFilter === 'up' && r.status === 'up') || 
+            (currentFilter === 'down' && r.status === 'down') ||
+            (currentFilter === 'warn' && (daysUntil(r.ssl) !== null && daysUntil(r.ssl) <= 14))
         );
         return matchQuery && matchFilter;
     });
@@ -86,14 +85,19 @@ function rowEl(r){
     const tr = document.createElement('tr');
     const sslDays = daysUntil(r.ssl);
     let sslLabel, sslClass;
+
     if (sslDays === null) {
-        sslLabel = '—';
-        sslClass = '';
+      // If days can't be calculated, it's likely an error message from the backend
+      sslLabel = r.ssl; 
+      sslClass = 'down';
     } else {
-        sslLabel = `${r.ssl} (${sslDays}d)`;
-        sslClass = sslDays <= 14 ? 'warn' : 'up';
+      sslLabel = `${r.ssl} (${sslDays}d)`;
+      sslClass = sslDays <= 14 ? 'warn' : 'up';
     }
-    // MODIFICATION: Added a remove button with a data-domain attribute
+    
+    // Provide clearer text if the issuer couldn't be fetched due to an error
+    const issuerDisplay = r.issuer === 'N/A' && sslClass === 'down' ? 'Check Failed' : r.issuer;
+
     tr.innerHTML = `
       <td>
         <div style="display:flex; align-items:center; gap:10px">
@@ -102,29 +106,33 @@ function rowEl(r){
         </div>
       </td>
       <td><span class="status ${r.status}"><i class="fas fa-circle"></i>${r.status.toUpperCase()}</span></td>
-      <td>${r.issuer || '—'}</td>
+      <td>${issuerDisplay}</td>
       <td><span class="status ${sslClass}">${sslLabel}</span></td>
       <td><button class="btn secondary sm remove-btn" data-domain="${r.domain}"><i class="fas fa-trash"></i> Remove</button></td>
     `;
     return tr;
 }
 
-// --- Stats and Event Listeners ---
 function refreshStats(rows){
-  // ... (this function is unchanged)
+  const total = rows.length;
+  $('#statTotal').textContent = total;
 }
 
-function setupEventListeners() {
-    // Search input
-    $('#searchInput').addEventListener('input', (e)=>{ query = e.target.value.trim().toLowerCase(); renderTable(); });
+// =================================================================
+// Event Listeners Setup
+// =================================================================
 
-    // Logout button
+function setupEventListeners() {
+    $('#searchInput').addEventListener('input', (e) => {
+        query = e.target.value.trim().toLowerCase();
+        renderTable();
+    });
+
     $('#logoutBtn').addEventListener('click', async () => {
         await fetch('/api/logout', { method: 'POST' });
         window.location.href = '/login';
     });
 
-    // Add single domain
     $('#addDomainForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const input = e.target.elements.domain;
@@ -138,9 +146,9 @@ function setupEventListeners() {
                 body: JSON.stringify({ domain })
             });
             const result = await response.json();
-            if(response.ok) {
+            if (response.ok) {
                 input.value = ''; // Clear input on success
-                fetchDomains(); // Refresh table
+                fetchDomains(); // Refresh table with new domain
             } else {
                 alert(`Error: ${result.message}`);
             }
@@ -150,7 +158,6 @@ function setupEventListeners() {
         }
     });
 
-    // Bulk upload
     $('#bulkBtn').addEventListener('click', () => $('#fileInput').click());
     $('#fileInput').addEventListener('change', async (e) => {
         const file = e.target.files[0];
@@ -175,7 +182,7 @@ function setupEventListeners() {
         }
     });
 
-    // Remove button (delegated)
+    // Use event delegation for remove buttons inside the table body
     tbody.addEventListener('click', (e) => {
         const removeButton = e.target.closest('.remove-btn');
         if (removeButton) {
@@ -184,9 +191,11 @@ function setupEventListeners() {
     });
 }
 
-// --- Init ---
+// =================================================================
+// Initializer
+// =================================================================
+
 (function init(){
-  fetchDomains(); // Initial data load
-  setupEventListeners();
-  // Chart logic remains unchanged
+  fetchDomains(); // Load initial data as soon as the page loads
+  setupEventListeners(); // Activate all the interactive elements
 })();

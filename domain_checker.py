@@ -31,9 +31,30 @@ def get_certificate_info(hostname: str):
             logger.info(f"Certificate for {hostname} is valid .")
             return 'valid', expiry_date.strftime("%Y-%m-%d"), issuer
 
+    except socket.gaierror:
+        # this error occurs if the DNS lookup fails (e.g., domain does not exist).
+        # this is the cause of '[Errno 11001] getaddrinfo failed'.
+        logger.error(f"DNS resolution failed for {hostname}.")
+        return 'failed', 'DNS resolution failed', 'N/A'
+    except ssl.SSLCertVerificationError:
+        # this error occurs for SSL certificate validation issues, like a hostname mismatch.
+        # this is the cause of '[SSL: CERTIFICATE_VERIFY_FAILED]...'.
+        logger.error(f"SSL certificate verification failed for {hostname}.")
+        return 'failed', 'SSL certificate invalid', 'N/A'
+    except socket.timeout:
+        # this error occurs if the connection attempt exceeds the timeout value.
+        logger.error(f"Connection timed out for {hostname}.")
+        return 'failed', 'Connection timed out', 'N/A'
+    except ConnectionRefusedError:
+        # this error occurs if the server is reachable but actively refuses the connection.
+        logger.error(f"Connection refused for {hostname}.")
+        return 'failed', 'Connection refused', 'N/A'
     except Exception as e:
-        logger.error(f"an error occurred during certificate check for {hostname}: {e}")
-        return 'failed', str(e), 'N/A'
+        # a general catch-all for any other unexpected errors.
+        # we log the specific error for debugging but return a generic message to the user.
+        logger.error(f"An unexpected error occurred during certificate check for {hostname}: {e}")
+        return 'failed', 'An unknown error occurred', 'N/A'
+
     
     
 
