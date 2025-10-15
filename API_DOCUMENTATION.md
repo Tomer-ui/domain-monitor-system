@@ -1,11 +1,9 @@
-***API Documentation***
+API Documentation
 This guide details the available API endpoints for the Domain Monitoring System.
 Base URL: All endpoints are prefixed with /api.
 Authentication: Most endpoints require an active user session. The API uses a secure, server-side session cookie that is automatically handled by the browser after a successful login via the /api/login endpoint. If a session is not active or is invalid, the API will respond with a 401 Unauthorized status.
-
-
-***Authentication & Session
-*POST /api/register
+Authentication & Session
+POST /api/register
 Registers a new user account.
 Request Body: application/json
 code
@@ -22,21 +20,21 @@ JSON
     "message": "Registration successful"
 }
 Error Responses:
-400 Bad Request: If username or password are missing from the request.
+400 Bad Request: If username or password are missing.
 code
 JSON
 {
     "success": false,
     "message": "Username and password are required."
 }
-```    *   **409 Conflict:** If the username already exists.
-```json
+409 Conflict: If the username already exists.
+code
+JSON
 {
     "success": false,
     "message": "username already exists"
 }
-
-*POST /api/login
+POST /api/login
 Logs in a user and creates a session cookie.
 Request Body: application/json
 code
@@ -59,7 +57,7 @@ JSON
     "success": false,
     "message": "invalid credentials"
 }
-*POST /api/logout
+POST /api/logout
 Logs out the current user and clears their session.
 Request Body: None.
 Success Response (200 OK):
@@ -69,7 +67,7 @@ JSON
     "success": true,
     "message": "You have been logged out."
 }
-*GET /api/session
+GET /api/session
 Checks if a user is currently authenticated by verifying their session cookie. This is useful for a frontend to determine if it should display a login page or a dashboard.
 Request Body: None.
 Success Response (200 OK): If the user has a valid session.
@@ -85,22 +83,18 @@ JSON
 {
     "loggedIn": false
 }
-
-
-***Domain Management
-*GET /api/domains
+Domain Management
+GET /api/domains
 Retrieves the current user's full list of monitored domains and triggers a fresh status check on them.
 Authentication: Required.
 Request Body: None.
 Success Response (200 OK): Returns an array of domain objects. The array will be empty if the user has no domains.
-
 Field Descriptions:
 domain: The domain name that was checked.
 status: A string indicating the liveness of the domain (e.g., "Live. Status code 200").
 ssl_issuer: The common name of the SSL certificate's issuing authority.
-ssl_expiration:
-The SSL certificate's expiration date in YYYY-MM-DD format if the check is successful.
-
+ssl_expiration: The SSL certificate's expiration date in YYYY-MM-DD format. If an SSL check fails, this field will contain a specific error message (e.g., "DNS resolution failed", "SSL certificate invalid", etc.).
+Example Response:
 code
 JSON
 [
@@ -117,17 +111,8 @@ JSON
         "status": "Unavailable. Status code FAILED"
     }
 ]
-
-If an error occurs during the SSL check, this field will contain one of the following specific error messages:
-"DNS resolution failed"
-"SSL certificate invalid"
-"Connection timed out"
-"Connection refused"
-"An unknown error occurred"
-and ofcourse:
 Error Response (401 Unauthorized): If the user is not logged in.
-
-*POST /api/add_domain
+POST /api/add_domain
 Adds a single new domain to the user's monitoring list.
 Authentication: Required.
 Request Body: application/json
@@ -136,8 +121,9 @@ JSON
 {
     "domain": "new-domain.com"
 }
-```*   **Success Response (201 Created):**
-```json
+Success Response (201 Created):
+code
+JSON
 {
     "success": true,
     "message": "Domain 'new-domain.com' was added successfully."
@@ -183,8 +169,7 @@ JSON
     "message": "Domain 'domain-to-remove.com' not found."
 }
 401 Unauthorized: If the user is not logged in.
-
-*POST /api/bulk_upload
+POST /api/bulk_upload
 Adds multiple domains to the user's list from an uploaded .txt file. Each domain should be on a new line.
 Authentication: Required.
 Request Body: multipart/form-data
