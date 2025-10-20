@@ -4,22 +4,19 @@ After=network.target
 Wants=network-online.target
 
 [Service]
-# Run as ubuntu user
 User=ubuntu
 Group=ubuntu
-
-# Directory where the app lives
 WorkingDirectory=/home/ubuntu/domain-monitor-system
 
-# Run the app via venv Python
-ExecStart=/home/ubuntu/domain-monitor-system/_venv_/bin/python app.py
+# Run the app using the virtual environment Python
+ExecStart=/home/ubuntu/domain-monitor-system/_venv_/bin/python3 /home/ubuntu/domain-monitor-system/app.py
 
-# Environment for venv and Flask
+# Environment variables
 Environment="PATH=/home/ubuntu/domain-monitor-system/_venv_/bin"
 Environment="FLASK_ENV=production"
 Environment="PYTHONUNBUFFERED=1"
 
-# Capture stdout/stderr in journalctl
+# Log to journal
 StandardOutput=journal
 StandardError=journal
 
