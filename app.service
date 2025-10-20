@@ -1,0 +1,13 @@
+[Unit]
+Description=Domain liveness check
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/root/domain-monitor-system
+ExecStart=python3 app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
