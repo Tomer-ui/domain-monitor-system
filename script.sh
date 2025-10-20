@@ -20,8 +20,8 @@ check_result "Downloading git repository"
 
 cd domain-monitor-system/
 
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv _venv_
+source _venv_/bin/activate
 check_result "Creating virtual environment"
 
 pip install -r requirements.txt
