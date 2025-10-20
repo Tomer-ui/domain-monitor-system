@@ -1,41 +1,89 @@
 #!/bin/bash
-set -e
+set -e  # exit on any error
 
-# Function to print status
-function check_result() {
-    if [ $? -ne 0 ]; then
-        echo "[ERROR] $1 failed. Exiting."
-        exit 1
-    fi
-    echo "[SUCCESS] $1 succeeded."
-}
+echo "[INFO] Starting deployment of Domain Monitor System..."
 
-# Update and install system packages
+# -----------------------------
+# Variables
+# -----------------------------
+APP_DIR="$HOME/domain-monitor-system"
+REPO_URL="https://github.com/Tomer-ui/domain-monitor-system.git"
+
+# -----------------------------
+# Install system dependencies
+# -----------------------------
 echo "[INFO] Updating repositories..."
 sudo apt update -y
-check_result "Updating repositories"
+echo "[SUCCESS] Repositories updated."
 
-echo "[INFO] Installing dependencies..."
+echo "[INFO] Installing required packages..."
 sudo apt install -y git python3-venv python3-pip
-check_result "Installing dependencies"
+echo "[SUCCESS] Dependencies installed."
 
-# Create virtual environment and install Python dependencies
-echo "[INFO] Creating virtual environment..."
-python3 -m venv _venv_
-check_result "Virtual environment created"
+# -----------------------------
+# Clone or update the repo
+# -----------------------------
+if [ -d "$APP_DIR" ]; then
+    echo "[INFO] Repo exists. Pulling latest changes..."
+    cd "$APP_DIR"
+    git reset --hard
+    git pull
+else
+    echo "[INFO] Cloning repository..."
+    git clone "$REPO_URL" "$APP_DIR"
+    cd "$APP_DIR"
+fi
+echo "[SUCCESS] Repo ready at $APP_DIR"
 
-echo "[INFO] Activating venv and installing Python requirements..."
+# -----------------------------
+# Create virtual environment
+# -----------------------------
+if [ ! -d "_venv_" ]; then
+    echo "[INFO] Creating Python virtual environment..."
+    python3 -m venv _venv_
+else
+    echo "[INFO] Virtual environment already exists."
+fi
+
+# Activate venv and install Python dependencies
+echo "[INFO] Installing Python requirements..."
 source _venv_/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
-check_result "Python dependencies installed"
+echo "[SUCCESS] Python dependencies installed."
 
-# Copy systemd unit file
+# -----------------------------
+# Configure systemd service
+# -----------------------------
+SERVICE_FILE="/etc/systemd/system/app.service"
+
 echo "[INFO] Installing systemd service..."
-sudo cp app.service /etc/systemd/system/app.service
+sudo bash -c "cat > $SERVICE_FILE" <<EOL
+[Unit]
+Description=Domain Liveness Check Flask App
+After=network.target
+Wants=network-online.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=$APP_DIR
+ExecStart=$APP_DIR/_venv_/bin/python3 $APP_DIR/app.py
+Environment=\"PATH=$APP_DIR/_venv_/bin\"
+Environment=\"FLASK_ENV=production\"
+Environment=\"PYTHONUNBUFFERED=1\"
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOL
+
 sudo systemctl daemon-reload
 sudo systemctl enable app.service
 sudo systemctl restart app.service
-check_result "Systemd service installed and started"
+echo "[SUCCESS] Systemd service installed and started."
 
-echo "[INFO] Setup complete. Flask app should now be running on port 8080."
+echo "[INFO] Deployment complete! Flask app is running on port 8080."
