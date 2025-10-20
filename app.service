@@ -7,22 +7,14 @@ Wants=network-online.target
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/home/ubuntu/domain-monitor-system
-
-# Run the app using the virtual environment Python
 ExecStart=/home/ubuntu/domain-monitor-system/_venv_/bin/python3 /home/ubuntu/domain-monitor-system/app.py
-
-# Environment variables
 Environment="PATH=/home/ubuntu/domain-monitor-system/_venv_/bin"
 Environment="FLASK_ENV=production"
 Environment="PYTHONUNBUFFERED=1"
-
-# Log to journal
-StandardOutput=journal
-StandardError=journal
-
-# Restart policy
 Restart=on-failure
 RestartSec=5
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
