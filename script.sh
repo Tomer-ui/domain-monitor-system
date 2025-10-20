@@ -87,3 +87,4 @@ sudo systemctl restart app.service
 echo "[SUCCESS] Systemd service installed and started."
 
 echo "[INFO] Deployment complete! Flask app is running on port 8080."
+
