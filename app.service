@@ -1,18 +1,31 @@
 [Unit]
-Description=Domain liveness check
+Description=Domain Liveness Check Flask App
 After=network.target
+Wants=network-online.target
 
 [Service]
-User=root
-WorkingDirectory=/root/domain-monitor-system
-ExecStart=/root/domain-monitor-system/_venv_/bin/python app.py
-Restart=on-failure
-RestartSec=5
-Environment="PATH=/root/domain-monitor-system/_venv_/bin"
+# Run as ubuntu user
+User=ubuntu
+Group=ubuntu
+
+# Directory where the app lives
+WorkingDirectory=/home/ubuntu/domain-monitor-system
+
+# Run the app via venv Python
+ExecStart=/home/ubuntu/domain-monitor-system/_venv_/bin/python app.py
+
+# Environment for venv and Flask
+Environment="PATH=/home/ubuntu/domain-monitor-system/_venv_/bin"
 Environment="FLASK_ENV=production"
 Environment="PYTHONUNBUFFERED=1"
 
+# Capture stdout/stderr in journalctl
+StandardOutput=journal
+StandardError=journal
 
+# Restart policy
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
