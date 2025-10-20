@@ -30,11 +30,13 @@ flask based web application to monitor domain status, SSL certificate validity &
 ├── .gitignore
 ├── API_DOCUMENTATION.md
 ├── app.py
+├── app.service
 ├── data_manager.py
 ├── domain_checker.log
 ├── domain_checker.py
 ├── logs.py
 ├── requirements.txt
+├── script.sh
 ├── users.json
 └── user_management.py
 ...
