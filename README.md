@@ -30,7 +30,6 @@ flask based web application to monitor domain status, SSL certificate validity &
 ├── .gitignore
 ├── API_DOCUMENTATION.md
 ├── app.py
-├── app.service
 ├── data_manager.py
 ├── domain_checker.log
 ├── domain_checker.py
@@ -42,6 +41,27 @@ flask based web application to monitor domain status, SSL certificate validity &
 ...
 
 ## Setup and Installation
+
+******************************************************
+*         FOR FAST  DEPLOYMENT                       *
+*                                                    *
+******************************************************
+
+use the next command - after the creating of your machine :
+
+ssh -i PATH_TO_KEY.pem ubuntu@MACHINE_PUBLIC_IP "
+curl -s https://raw.githubusercontent.com/Tomer-ui/domain-monitor-system/main/script.sh | bash
+"
+
+*************
+example :
+*************
+
+ssh -i C:\Users\tomas\.ssh\td_test1.pem ubuntu@3.140.248.141 "
+curl -s https://raw.githubusercontent.com/Tomer-ui/domain-monitor-system/main/script.sh | bash
+"
+
+
 
 ### Prerequisites
 
