@@ -44,18 +44,15 @@ pipeline {
                         sleep 10
 
                         echo "--- Running API Tests ---"
-                        // Install test dependencies and run pytest for API tests
-                        // Docker exec runs a command inside a running container.
-                        // Here, we run tests on the host which connect to the container via localhost:8080
+                        // Create a virtual environment, install dependencies, and run the API test script.
                         sh "python3 -m venv test_venv"
-                        sh "source test_venv/bin/activate && pip install -r tests/requirements.txt && pytest tests/test_api.py"
+                        // Assumes you have a tests/requirements.txt file with dependencies like 'requests' and 'selenium'.
+                        sh "source test_venv/bin/activate && pip install -r tests/requirements.txt && python3 tests/test_api.py"
                         
                         echo "--- Running UI Tests ---"
-                        // For Selenium, we need to install Chrome and ChromeDriver on the worker
-                        // It's better to do this once during worker setup, but for this example, we show it here.
-                        // On the worker: sudo apt-get install -y google-chrome-stable
-                        // And download chromedriver compatible with the version.
-                        sh "source test_venv/bin/activate && pytest tests/test_ui.py"
+                        // Run the UI test script in the same virtual environment.
+                        // The worker node must have Google Chrome and a compatible ChromeDriver installed for this to succeed.
+                        sh "source test_venv/bin/activate && python3 tests/test_ui.py"
 
                     } catch (e) {
                         // If any test fails, print the error and fail the pipeline
