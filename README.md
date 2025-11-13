@@ -1,4 +1,5 @@
 # Domain Monitor System
+CICD
 
 flask based web application to monitor domain status, SSL certificate validity & more, via a web interface & a RESTful API 
 
