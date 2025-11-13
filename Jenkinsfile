@@ -2,9 +2,7 @@ pipeline {
     agent { label 'docker-worker' }
 
     environment {
-        // Correctly load the credential into an environment variable.
         DOCKERHUB_USERNAME = credentials('dockerhub-username')
-        // Define the image repo name SEPARATELY.
         IMAGE_REPO = "domain-monitor-system" 
     }
 
@@ -24,8 +22,8 @@ pipeline {
             steps {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
-                    // **THE FIX**: Use shell variable syntax ($VAR) inside the sh step.
                     echo "Building temporary image: ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId}"
+                    // THE FIX: Using the credential as a proper shell environment variable
                     sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ."
                 }
             }
@@ -35,7 +33,7 @@ pipeline {
             steps {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
-                    // **THE FIX**: Also applied here.
+                    // THE FIX: Applied here too
                     sh "docker run -d --name test-container -p 8080:8080 ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId}"
                     
                     try {
@@ -66,7 +64,7 @@ pipeline {
                         sh "docker login -u ${USER} -p ${PASS}"
                     }
                     
-                    // **THE FIX**: Also applied to tag and push commands.
+                    // THE FIX: Applied to all tag and push commands
                     sh "docker tag ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${version}"
                     sh "docker tag ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:latest"
                     
@@ -82,7 +80,7 @@ pipeline {
             script {
                 echo "--- Final Workspace Cleanup ---"
                 def commitId = env.GIT_COMMIT.take(8)
-                // **THE FIX**: Also applied here.
+                // THE FIX: Applied here too
                 sh "docker rmi ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} || true"
                 cleanWs()
             }
