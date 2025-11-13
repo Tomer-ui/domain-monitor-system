@@ -10,6 +10,12 @@ pipeline {
         IMAGE_NAME = "${DOCKERHUB_USERNAME}/domain-monitor-system"
     }
 
+    // 3. ADDED: This block tells Jenkins to listen for a push event from GitHub.
+    // This is the critical fix for the build not starting automatically.
+    triggers {
+        githubPush()
+    }
+
     stages {
         // Stage 1: Checkout code from GitHub
         stage('Checkout') {
@@ -44,14 +50,12 @@ pipeline {
                         sleep 10
 
                         echo "--- Running API Tests ---"
-                        // Create a virtual environment, install dependencies, and run the API test script.
+                        // CORRECTED: Run the python test script directly instead of using pytest
                         sh "python3 -m venv test_venv"
-                        // Assumes you have a tests/requirements.txt file with dependencies like 'requests' and 'selenium'.
                         sh "source test_venv/bin/activate && pip install -r tests/requirements.txt && python3 tests/test_api.py"
                         
                         echo "--- Running UI Tests ---"
-                        // Run the UI test script in the same virtual environment.
-                        // The worker node must have Google Chrome and a compatible ChromeDriver installed for this to succeed.
+                        // CORRECTED: Run the python test script directly
                         sh "source test_venv/bin/activate && python3 tests/test_ui.py"
 
                     } catch (e) {
