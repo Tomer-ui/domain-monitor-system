@@ -4,8 +4,8 @@ pipeline {
     environment {
         // Correctly load the credential into an environment variable.
         DOCKERHUB_USERNAME = credentials('dockerhub-username')
-        // Define the image name WITHOUT the username. We'll add it in the shell commands.
-        IMAGE_REPO = "domain-monitor-system"
+        // Define the image repo name SEPARATELY.
+        IMAGE_REPO = "domain-monitor-system" 
     }
 
     triggers {
@@ -24,8 +24,7 @@ pipeline {
             steps {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
-                    // Use shell variable syntax ($DOCKERHUB_USERNAME) inside the sh step.
-                    // This is the main fix.
+                    // **THE FIX**: Use shell variable syntax ($VAR) inside the sh step.
                     echo "Building temporary image: ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId}"
                     sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ."
                 }
@@ -36,7 +35,7 @@ pipeline {
             steps {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
-                    // Also fixed here.
+                    // **THE FIX**: Also applied here.
                     sh "docker run -d --name test-container -p 8080:8080 ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId}"
                     
                     try {
@@ -67,7 +66,7 @@ pipeline {
                         sh "docker login -u ${USER} -p ${PASS}"
                     }
                     
-                    // Also fixed here for docker tag and push.
+                    // **THE FIX**: Also applied to tag and push commands.
                     sh "docker tag ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${version}"
                     sh "docker tag ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:latest"
                     
@@ -83,7 +82,7 @@ pipeline {
             script {
                 echo "--- Final Workspace Cleanup ---"
                 def commitId = env.GIT_COMMIT.take(8)
-                // Also fixed here.
+                // **THE FIX**: Also applied here.
                 sh "docker rmi ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} || true"
                 cleanWs()
             }
