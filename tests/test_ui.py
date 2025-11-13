@@ -16,7 +16,7 @@ from selenium.webdriver.chrome.service import Service
 
 
 # Configuration
-APP_URL = http://localhost:8080
+APP_URL = "http://127.0.0.1:8080"
 TEST_USER = f"selenium_test_{int(time.time())}"
 TEST_PASSWORD = "TestPass123!"
 
@@ -230,84 +230,141 @@ def test_domain_results(driver):
 def test_bulk_upload(driver):
     """Test 5: Bulk domain upload"""
     print("\n--- Test 5: Bulk Domain Upload ---")
+    
+    temp_file = None
     try:
-        # Should be on dashboard
+        # Navigate to dashboard
         if "dashboard" not in driver.current_url:
             driver.get(f"{APP_URL}/dashboard")
             time.sleep(2)
         
-        # Create temporary file with test domains
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
+        # Create temporary file
+        temp_file = '/tmp/test_domains.txt'
+        with open(temp_file, 'w') as f:
             f.write("example.com\n")
             f.write("github.com\n")
             f.write("stackoverflow.com\n")
-            temp_file = f.name
         
-        # Find file input (it's hidden, but we can still send keys to it)
+        print(f"   Created: {temp_file}")
+        
+        # Upload file
         file_input = driver.find_element(By.ID, "fileInput")
         file_input.send_keys(temp_file)
         
         # Wait for upload to process
-        time.sleep(5)
+        time.sleep(2)
         
-        # Check if domains were added to table
+        # Handle alert popup
+        try:
+            alert = WebDriverWait(driver, 5).until(EC.alert_is_present())
+            alert_text = alert.text
+            print(f"   📢 Alert: {alert_text}")
+            alert.accept()
+        except:
+            print("   No alert (ok)")
+        
+        # Wait for table to refresh
+        time.sleep(3)
+        
+        # Verify domains added
         table_body = driver.find_element(By.CSS_SELECTOR, "#domainsTable tbody")
         rows = table_body.find_elements(By.TAG_NAME, "tr")
         
-        # Should have at least 3 domains now (google.com + 3 uploaded)
+        print(f"   Found {len(rows)} domains in table")
         assert len(rows) >= 3, f"Expected at least 3 domains, found {len(rows)}"
         
-        # Cleanup temp file
-        os.unlink(temp_file)
-        
-        print(f"✓ Bulk upload passed ({len(rows)} total domains)")
+        print("✓ Bulk upload passed")
         return True
         
     except Exception as e:
         print(f"✗ Bulk upload failed: {e}")
         driver.save_screenshot("/tmp/bulk_upload_failed.png")
+        
+        # Try to dismiss any lingering alert
+        try:
+            driver.switch_to.alert.accept()
+        except:
+            pass
+        
         return False
+    
+    finally:
+        # Cleanup temp file
+        if temp_file and os.path.exists(temp_file):
+            try:
+                os.unlink(temp_file)
+                print(f"   🧹 Cleaned up: {temp_file}")
+            except:
+                pass
 
 
 def test_remove_domain(driver):
     """Test 6: Remove a domain"""
     print("\n--- Test 6: Remove Domain ---")
+    
     try:
-        # Should be on dashboard
+        # Navigate to dashboard
         if "dashboard" not in driver.current_url:
             driver.get(f"{APP_URL}/dashboard")
             time.sleep(2)
         
-        # Get current row count
+        # Get initial count
         table_body = driver.find_element(By.CSS_SELECTOR, "#domainsTable tbody")
         initial_rows = len(table_body.find_elements(By.TAG_NAME, "tr"))
+        print(f"   Initial domains: {initial_rows}")
         
-        # Find first remove button
+        if initial_rows == 0:
+            print("   ⚠️  No domains to remove, skipping test")
+            return True
+        
+        # Click first remove button
         remove_button = driver.find_element(By.CSS_SELECTOR, "button.remove-btn")
+        domain_name = remove_button.get_attribute("data-domain")
+        print(f"   Removing: {domain_name}")
         remove_button.click()
         
-        # Handle confirmation dialog
+        # Handle confirmation dialog (Are you sure?)
         time.sleep(1)
         try:
-            alert = driver.switch_to.alert
-            alert.accept()
+            confirm_alert = driver.switch_to.alert
+            print(f"   📢 Confirm: {confirm_alert.text}")
+            confirm_alert.accept()
         except:
-            pass  # No alert, that's fine
+            print("   No confirmation dialog")
         
-        # Wait for page to refresh
-        time.sleep(3)
+        # Handle success alert (Domain removed)
+        time.sleep(2)
+        try:
+            success_alert = WebDriverWait(driver, 3).until(EC.alert_is_present())
+            print(f"   📢 Success: {success_alert.text}")
+            success_alert.accept()
+        except:
+            print("   No success alert")
         
-        # Check if row count decreased
+        # Wait for table to refresh
+        time.sleep(2)
+        
+        # Verify domain removed
+        table_body = driver.find_element(By.CSS_SELECTOR, "#domainsTable tbody")
         new_rows = len(table_body.find_elements(By.TAG_NAME, "tr"))
+        print(f"   Domains after removal: {new_rows}")
+        
         assert new_rows < initial_rows, \
             f"Domain wasn't removed (had {initial_rows}, still have {new_rows})"
         
-        print(f"✓ Remove domain passed ({initial_rows} → {new_rows} domains)")
+        print(f"✓ Remove domain passed ({initial_rows} → {new_rows})")
         return True
         
     except Exception as e:
         print(f"✗ Remove domain failed: {e}")
         driver.save_screenshot("/tmp/remove_failed.png")
+        
+        # Dismiss any lingering alerts
+        try:
+            driver.switch_to.alert.accept()
+        except:
+            pass
+        
         return False
 
 

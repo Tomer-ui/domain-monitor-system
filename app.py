@@ -15,7 +15,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 
 # =================================================================
 # MODIFICATION: HTML Page Serving Routes
-# These routes ONLY serve the HTML templates. All data logic is 
+# These routes ONLY serve the HTML templates. All data logic is
 # in the API endpoints below.
 # =================================================================
 
@@ -53,12 +53,12 @@ def api_register():
     data = request.get_json()
     if not data or not data.get('username') or not data.get('password'):
         return jsonify({"success": False, "message": "Username and password are required."}), 400
-    
+
     username = data['username']
     password = data['password']
-    
+
     success, message = register_user(username, password)
-    
+
     if success:
         return jsonify({"success": True, "message": "Registration successful"}), 201
     else:
@@ -101,10 +101,10 @@ def api_session():
 def api_get_domains():
     if 'username' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-    
+
     username = session['username']
     logger.info(f"API: fetching and checking domains for user: {username}.")
-    
+
     domains_to_check = get_user_domains(username)
     domain_names = [d['domain'] for d in domains_to_check]
 
@@ -125,14 +125,17 @@ def api_get_domains():
         }
         final_report.append(formatted_result)
 
-    save_user_domains(username, final_report)
+    # THE FIX: This line was the source of the bug. A GET request should not modify data on the server.
+    # By removing it, we ensure that a failed live check cannot corrupt the user's saved list of domains.
+    # save_user_domains(username, final_report) 
+    
     return jsonify(final_report)
 
 @app.route('/api/add_domain', methods=['POST'])
 def api_add_domain():
     if 'username' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-    
+
     data = request.get_json()
     domain_to_add = data.get('domain', '').strip()
 
@@ -149,7 +152,7 @@ def api_add_domain():
     if not domain_regex.match(domain_to_add):
         return jsonify({"success": False, "message": "Invalid domain format. Please use a format like 'example.com'."}), 400
     #end of validation block
-    
+
     username = session['username']
     current_domains = get_user_domains(username)
 
@@ -166,13 +169,13 @@ def api_add_domain():
 def api_remove_domain():
     if 'username' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-    
+
     username = session['username']
     domain_to_remove = request.get_json().get('domain')
 
     if not domain_to_remove:
         return jsonify({"success": False, "message": "Invalid request."}), 400
-    
+
     success = remove_user_domain(username, domain_to_remove)
     if success:
         return jsonify({"success": True, "message": f"Domain '{domain_to_remove}' was removed."}), 200
@@ -183,12 +186,12 @@ def api_remove_domain():
 def api_bulk_upload():
     if 'username' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-    
+
     file = request.files.get('file')
 
     if not file or file.filename == '' or not file.filename.endswith('.txt'):
         return jsonify({"success": False, "message": "Please upload a valid .txt file."}), 400
-    
+
     username = session['username']
     current_domains = get_user_domains(username)
     existing_domain_names = {d['domain'] for d in current_domains}
