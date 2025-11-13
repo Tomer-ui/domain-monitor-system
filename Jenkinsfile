@@ -1,23 +1,18 @@
 pipeline {
-    // 1. Tell Jenkins to run this pipeline on any agent with the 'docker-worker' label.
     agent { label 'docker-worker' }
 
-    // 2. Define environment variables.
     environment {
-        // Use Jenkins Credentials plugin for security. Create a 'Secret Text' credential with your Docker Hub username.
+        // Correctly load the credential into an environment variable.
         DOCKERHUB_USERNAME = credentials('dockerhub-username')
-        // We will generate the version number dynamically.
-        IMAGE_NAME = "${DOCKERHUB_USERNAME}/domain-monitor-system"
+        // Define the image name WITHOUT the username. We'll add it in the shell commands.
+        IMAGE_REPO = "domain-monitor-system"
     }
 
-    // 3. ADDED: This block tells Jenkins to listen for a push event from GitHub.
-    // This is the critical fix for the build not starting automatically.
     triggers {
         githubPush()
     }
 
     stages {
-        // Stage 1: Checkout code from GitHub
         stage('Checkout') {
             steps {
                 echo 'Checking out the code...'
@@ -25,46 +20,34 @@ pipeline {
             }
         }
 
-        // Stage 2: Build a temporary Docker image
         stage('Build') {
             steps {
                 script {
-                    // Use the short Git commit hash as a unique, temporary tag.
                     def commitId = env.GIT_COMMIT.take(8)
-                    echo "Building temporary image: ${IMAGE_NAME}:${commitId}"
-                    sh "docker build -t ${IMAGE_NAME}:${commitId} ."
+                    // Use shell variable syntax ($DOCKERHUB_USERNAME) inside the sh step.
+                    // This is the main fix.
+                    echo "Building temporary image: ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId}"
+                    sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ."
                 }
             }
         }
 
-        // Stage 3: Run Tests
         stage('Test') {
             steps {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
-                    // Run the application container in the background
-                    sh "docker run -d --name test-container -p 8080:8080 ${IMAGE_NAME}:${commitId}"
+                    // Also fixed here.
+                    sh "docker run -d --name test-container -p 8080:8080 ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId}"
                     
                     try {
-                        // Wait a moment for the Flask app to start inside the container
                         sleep 10
-
                         echo "--- Running API Tests ---"
-                        // CORRECTED: Run the python test script directly instead of using pytest
                         sh "python3 -m venv test_venv"
                         sh "source test_venv/bin/activate && pip install -r tests/requirements.txt && python3 tests/test_api.py"
                         
                         echo "--- Running UI Tests ---"
-                        // CORRECTED: Run the python test script directly
                         sh "source test_venv/bin/activate && python3 tests/test_ui.py"
-
-                    } catch (e) {
-                        // If any test fails, print the error and fail the pipeline
-                        echo "A test failed!"
-                        echo e.getMessage()
-                        error "Build failed due to test failures."
                     } finally {
-                        // This block ALWAYS runs, ensuring cleanup happens.
                         echo "--- Cleaning up test container ---"
                         sh "docker stop test-container"
                         sh "docker rm test-container"
@@ -73,41 +56,35 @@ pipeline {
             }
         }
 
-        // Stage 4: Promote and Push to Docker Hub
         stage('Publish') {
             steps {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
-                    // Use the Jenkins build number for simple semantic versioning.
                     def version = "1.0.${env.BUILD_NUMBER}"
                     echo "Tests passed! Promoting image to version: ${version}"
                     
-                    // Log in to Docker Hub using the 'Username with password' credential type.
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                         sh "docker login -u ${USER} -p ${PASS}"
                     }
                     
-                    // Re-tag the temporary image with the new version and 'latest'.
-                    sh "docker tag ${IMAGE_NAME}:${commitId} ${IMAGE_NAME}:${version}"
-                    sh "docker tag ${IMAGE_NAME}:${commitId} ${IMAGE_NAME}:latest"
+                    // Also fixed here for docker tag and push.
+                    sh "docker tag ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${version}"
+                    sh "docker tag ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:latest"
                     
-                    // Push both tags to Docker Hub.
-                    sh "docker push ${IMAGE_NAME}:${version}"
-                    sh "docker push ${IMAGE_NAME}:latest"
+                    sh "docker push ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${version}"
+                    sh "docker push ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:latest"
                 }
             }
         }
     }
     
-    // Post-build actions that run regardless of the pipeline's success or failure.
     post {
         always {
             script {
                 echo "--- Final Workspace Cleanup ---"
                 def commitId = env.GIT_COMMIT.take(8)
-                // Remove the temporary Docker image from the worker node.
-                sh "docker rmi ${IMAGE_NAME}:${commitId} || true" // '|| true' prevents failure if image doesn't exist
-                // Jenkins' own cleanup
+                // Also fixed here.
+                sh "docker rmi ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} || true"
                 cleanWs()
             }
         }
