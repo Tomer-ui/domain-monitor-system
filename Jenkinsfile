@@ -1,10 +1,8 @@
 pipeline {
     agent { label 'docker-worker' }
 
-    // This block correctly separates the credential from the repository name
     environment {
-        DOCKERHUB_USERNAME = credentials('dockerhub-username')
-        IMAGE_REPO = "domain-monitor-system" 
+        IMAGE_REPO = "domain-monitor-system"
     }
 
     triggers {
@@ -23,9 +21,11 @@ pipeline {
             steps {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
-                    echo "Building temporary image: ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId}"
-                    // THE FIX: Using the credential as a proper shell environment variable
-                    sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ."
+                    // Use the secret safely via withCredentials
+                    withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')]) {
+                        echo "Building temporary image: ${DOCKER_USER}/${IMAGE_REPO}:${commitId}"
+                        sh "docker build -t ${DOCKER_USER}/${IMAGE_REPO}:${commitId} ."
+                    }
                 }
             }
         }
@@ -34,21 +34,22 @@ pipeline {
             steps {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
-                    // THE FIX: Applied here too
-                    sh "docker run -d --name test-container -p 8080:8080 ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId}"
-                    
-                    try {
-                        sleep 10
-                        echo "--- Running API Tests ---"
-                        sh "python3 -m venv test_venv"
-                        sh "source test_venv/bin/activate && pip install -r tests/requirements.txt && python3 tests/test_api.py"
-                        
-                        echo "--- Running UI Tests ---"
-                        sh "source test_venv/bin/activate && python3 tests/test_ui.py"
-                    } finally {
-                        echo "--- Cleaning up test container ---"
-                        sh "docker stop test-container"
-                        sh "docker rm test-container"
+                    withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')]) {
+                        sh "docker run -d --name test-container -p 8080:8080 ${DOCKER_USER}/${IMAGE_REPO}:${commitId}"
+
+                        try {
+                            sleep 10
+                            echo "--- Running API Tests ---"
+                            sh "python3 -m venv test_venv"
+                            sh "source test_venv/bin/activate && pip install -r tests/requirements.txt && python3 tests/test_api.py"
+
+                            echo "--- Running UI Tests ---"
+                            sh "source test_venv/bin/activate && python3 tests/test_ui.py"
+                        } finally {
+                            echo "--- Cleaning up test container ---"
+                            sh "docker stop test-container || true"
+                            sh "docker rm test-container || true"
+                        }
                     }
                 }
             }
@@ -59,31 +60,34 @@ pipeline {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
                     def version = "1.0.${env.BUILD_NUMBER}"
-                    echo "Tests passed! Promoting image to version: ${version}"
-                    
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+
+                    withCredentials([
+                        usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS'),
+                        string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')
+                    ]) {
                         sh "docker login -u ${USER} -p ${PASS}"
+                        echo "Publishing image ${DOCKER_USER}/${IMAGE_REPO}:${version}"
+
+                        sh "docker tag ${DOCKER_USER}/${IMAGE_REPO}:${commitId} ${DOCKER_USER}/${IMAGE_REPO}:${version}"
+                        sh "docker tag ${DOCKER_USER}/${IMAGE_REPO}:${commitId} ${DOCKER_USER}/${IMAGE_REPO}:latest"
+
+                        sh "docker push ${DOCKER_USER}/${IMAGE_REPO}:${version}"
+                        sh "docker push ${DOCKER_USER}/${IMAGE_REPO}:latest"
                     }
-                    
-                    // THE FIX: Applied to all tag and push commands
-                    sh "docker tag ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${version}"
-                    sh "docker tag ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:latest"
-                    
-                    sh "docker push ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${version}"
-                    sh "docker push ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:latest"
                 }
             }
         }
     }
-    
+
     post {
         always {
             script {
-                echo "--- Final Workspace Cleanup ---"
                 def commitId = env.GIT_COMMIT.take(8)
-                // THE FIX: Applied here too
-                sh "docker rmi ${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${commitId} || true"
-                cleanWs()
+                withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')]) {
+                    echo "--- Final Workspace Cleanup ---"
+                    sh "docker rmi ${DOCKER_USER}/${IMAGE_REPO}:${commitId} || true"
+                    cleanWs()
+                }
             }
         }
     }
