@@ -23,8 +23,10 @@ pipeline {
                     def commitId = env.GIT_COMMIT.take(8)
                     // Use the secret safely via withCredentials
                     withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')]) {
-                        echo "Building temporary image: ${DOCKER_USER}/${IMAGE_REPO}:${commitId}"
-                        sh "docker build -t ${DOCKER_USER}/${IMAGE_REPO}:${commitId} ."
+                        // FIX: Convert Docker username to lowercase
+                        def dockerUserLower = DOCKER_USER.toLowerCase()
+                        echo "Building temporary image: ${dockerUserLower}/${IMAGE_REPO}:${commitId}"
+                        sh "docker build -t ${dockerUserLower}/${IMAGE_REPO}:${commitId} ."
                     }
                 }
             }
@@ -35,7 +37,9 @@ pipeline {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
                     withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')]) {
-                        sh "docker run -d --name test-container -p 8080:8080 ${DOCKER_USER}/${IMAGE_REPO}:${commitId}"
+                        // FIX: Convert Docker username to lowercase
+                        def dockerUserLower = DOCKER_USER.toLowerCase()
+                        sh "docker run -d --name test-container -p 8080:8080 ${dockerUserLower}/${IMAGE_REPO}:${commitId}"
 
                         try {
                             sleep 10
@@ -65,14 +69,17 @@ pipeline {
                         usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS'),
                         string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')
                     ]) {
+                        // FIX: Convert Docker username to lowercase
+                        def dockerUserLower = DOCKER_USER.toLowerCase()
+
                         sh "docker login -u ${USER} -p ${PASS}"
-                        echo "Publishing image ${DOCKER_USER}/${IMAGE_REPO}:${version}"
+                        echo "Publishing image ${dockerUserLower}/${IMAGE_REPO}:${version}"
 
-                        sh "docker tag ${DOCKER_USER}/${IMAGE_REPO}:${commitId} ${DOCKER_USER}/${IMAGE_REPO}:${version}"
-                        sh "docker tag ${DOCKER_USER}/${IMAGE_REPO}:${commitId} ${DOCKER_USER}/${IMAGE_REPO}:latest"
+                        sh "docker tag ${dockerUserLower}/${IMAGE_REPO}:${commitId} ${dockerUserLower}/${IMAGE_REPO}:${version}"
+                        sh "docker tag ${dockerUserLower}/${IMAGE_REPO}:${commitId} ${dockerUserLower}/${IMAGE_REPO}:latest"
 
-                        sh "docker push ${DOCKER_USER}/${IMAGE_REPO}:${version}"
-                        sh "docker push ${DOCKER_USER}/${IMAGE_REPO}:latest"
+                        sh "docker push ${dockerUserLower}/${IMAGE_REPO}:${version}"
+                        sh "docker push ${dockerUserLower}/${IMAGE_REPO}:latest"
                     }
                 }
             }
@@ -84,8 +91,10 @@ pipeline {
             script {
                 def commitId = env.GIT_COMMIT.take(8)
                 withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')]) {
+                    // FIX: Convert Docker username to lowercase
+                    def dockerUserLower = DOCKER_USER.toLowerCase()
                     echo "--- Final Workspace Cleanup ---"
-                    sh "docker rmi ${DOCKER_USER}/${IMAGE_REPO}:${commitId} || true"
+                    sh "docker rmi ${dockerUserLower}/${IMAGE_REPO}:${commitId} || true"
                     cleanWs()
                 }
             }
