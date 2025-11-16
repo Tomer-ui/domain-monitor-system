@@ -21,9 +21,7 @@ pipeline {
             steps {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
-                    // Use the secret safely via withCredentials
                     withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')]) {
-                        // FIX: Convert Docker username to lowercase
                         def dockerUserLower = DOCKER_USER.toLowerCase()
                         echo "Building temporary image: ${dockerUserLower}/${IMAGE_REPO}:${commitId}"
                         sh "docker build -t ${dockerUserLower}/${IMAGE_REPO}:${commitId} ."
@@ -37,18 +35,26 @@ pipeline {
                 script {
                     def commitId = env.GIT_COMMIT.take(8)
                     withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')]) {
-                        // FIX: Convert Docker username to lowercase
                         def dockerUserLower = DOCKER_USER.toLowerCase()
                         sh "docker run -d --name test-container -p 8080:8080 ${dockerUserLower}/${IMAGE_REPO}:${commitId}"
 
                         try {
                             sleep 10
+                            
+                            // FIX: Create the virtual environment and install requirements
+                            // by calling the venv's pip directly, avoiding the 'source' command.
+                            echo "--- Preparing Test Environment ---"
+                            sh """
+                                python3 -m venv test_venv
+                                test_venv/bin/pip install -r tests/requirements.txt
+                            """
+
+                            // FIX: Run tests by calling the python executable from the venv directly.
                             echo "--- Running API Tests ---"
-                            sh "python3 -m venv test_venv"
-                            sh "source test_venv/bin/activate && pip install -r tests/requirements.txt && python3 tests/test_api.py"
+                            sh "test_venv/bin/python3 tests/test_api.py"
 
                             echo "--- Running UI Tests ---"
-                            sh "source test_venv/bin/activate && python3 tests/test_ui.py"
+                            sh "test_venv/bin/python3 tests/test_ui.py"
                         } finally {
                             echo "--- Cleaning up test container ---"
                             sh "docker stop test-container || true"
@@ -69,7 +75,6 @@ pipeline {
                         usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS'),
                         string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')
                     ]) {
-                        // FIX: Convert Docker username to lowercase
                         def dockerUserLower = DOCKER_USER.toLowerCase()
 
                         sh "docker login -u ${USER} -p ${PASS}"
@@ -91,7 +96,6 @@ pipeline {
             script {
                 def commitId = env.GIT_COMMIT.take(8)
                 withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER')]) {
-                    // FIX: Convert Docker username to lowercase
                     def dockerUserLower = DOCKER_USER.toLowerCase()
                     echo "--- Final Workspace Cleanup ---"
                     sh "docker rmi ${dockerUserLower}/${IMAGE_REPO}:${commitId} || true"
