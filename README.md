@@ -1,5 +1,5 @@
 # Domain Monitor System
-CICD Go desta
+CICD Go desta2
 
 flask based web application to monitor domain status, SSL certificate validity & more, via a web interface & a RESTful API 
 
