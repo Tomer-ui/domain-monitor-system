@@ -5,8 +5,7 @@ pipeline {
     // Environment variables available throughout the pipeline.
     environment {
         IMAGE_REPO = "domain-monitor-system"
-        // *** IMPROVEMENT: Define commitId once for the whole pipeline ***
-        // This variable is now available in all stages as env.commitId
+      
         commitId = env.GIT_COMMIT.take(8)
     }
 
@@ -26,7 +25,8 @@ pipeline {
                         def dockerUserLower = DOCKER_USER.toLowerCase()
                         // Use the globally defined commitId from the environment block
                         echo "Building temporary image: ${dockerUserLower}/${IMAGE_REPO}:${env.commitId}"
-                        sh "docker build -t ${dockerUserLower}/${IMAGE_REPO}:${env.commitId} ."
+                         // This passes the Jenkins commitId variable to the Dockerfile's GIT_COMMIT_HASH argument.
+                        sh "docker build --build-arg GIT_COMMIT_HASH=${env.commitId} -t ${dockerUserLower}/${IMAGE_REPO}:${env.commitId} ."
                     }
                 }
             }
