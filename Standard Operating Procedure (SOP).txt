@@ -1,0 +1,229 @@
+Standard Operating Procedure (SOP) for Jenkins Infrastructure
+Here is a step-by-step guide to building the Jenkins infrastructure, incorporating and completing your provided outline.
+Prerequisites
+
+An AWS account.
+2 aws instances
+An SSH key pair for connecting to EC2 instances.
+A Docker Hub account.
+
+Part A: Jenkins Master Setup (Instance 1)
+1. Launch Master EC2 Instance
+Go to the EC2 console and launch a new instance.
+AMI: Ubuntu 22.04 LTS
+Instance Type: t2.micro (or t3.small for better performance).
+Key Pair: Select your SSH key.
+Security Group: Create a new security group with the following inbound rules:
+Type SSH (Port 22) from My IP.
+Type Custom TCP (Port 8080) from Anywhere (or My IP for security).
+Type Custom TCP (Port 50000) from the Private IP of your worker instance (you can add this later).
+
+2. Install Docker
+
+# Connect to your master instance via SSH
+ssh -i /path/to/your-key.pem ubuntu@MASTER_PUBLIC_IP
+
+# Install Docker Engine
+sudo apt update
+sudo apt install -y docker.io
+
+3. Give 'ubuntu' User Docker Privileges
+
+# Add the 'ubuntu' user to the 'docker' group to run docker commands without sudo
+sudo usermod -aG docker ubuntu
+
+# Apply the group changes 
+newgrp docker
+
+4. Create a Persistent Jenkins Home Directory
+
+sudo mkdir -p /var/jenkins_home
+
+# The Jenkins container runs as user 'jenkins' with UID 1000. Grant ownership to this UID.
+sudo chown -R 1000:1000 /var/jenkins_home
+
+5. Create and Run the Jenkins Container
+
+docker run \
+  -d \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v /var/jenkins_home:/var/jenkins_home \
+  --name jenkins \
+  --restart=unless-stopped \
+  jenkins/jenkins:lts-jdk17
+
+6. Complete Jenkins Installation in the UI
+Get the initial admin password from the container's logs:
+
+sudo docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+
+Open your browser and navigate to http://<MASTER_PUBLIC_IP>:8080.
+Paste the password, click "Install suggested plugins," and create your admin user.
+
+
+Part B: Jenkins Worker Setup (Instance 2)
+7. Launch Worker EC2 Instance
+Launch another EC2 instance (Ubuntu 22.04, t2.micro or t3.small).
+Important: Ensure it is in the same VPC and subnet as the master to allow communication over private IP.
+Security Group: Allow SSH (Port 22) from My IP.
+
+8. Install Dependencies (Java, Docker, venv, webdriver +web browser)
+
+# Connect to your worker instance via SSH
+ssh -i /path/to/your-key.pem ubuntu@WORKER_PUBLIC_IP
+
+# Install OpenJDK 17 (required for the Jenkins agent) & docker, & webdriver+ webbrowser(for the ui testing)
+sudo apt update
+sudo apt install -y openjdk-17-jre docker.io wget gnupg unzip jq
+
+#INSTALL GOOGLE CHROME#
+
+# Add Google's official signing key
+wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg
+
+
+# Add the Chrome repository to your system's sources
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+
+# Update the package list again to include the new repository
+sudo apt update
+
+# Install Google Chrome
+sudo apt install -y google-chrome-stable
+
+#INSTALL WEB DRIVER#
+
+# Get the latest stable Chrome version number installed on your system
+CHROME_VERSION=$(google-chrome --version | cut -d ' ' -f 3 | cut -d '.' -f 1-3)
+
+# Construct the URL to get the correct ChromeDriver version
+DOWNLOAD_URL="https://storage.googleapis.com/chrome-for-testing-public/$(curl -s https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json | jq -r ".versions[] | select(.version==\"$CHROME_VERSION\") | .downloads.chromedriver[0].url | select( . != null )")"
+
+# Download the correct chromedriver
+wget -O chromedriver.zip $DOWNLOAD_URL
+
+# Unzip the file
+unzip chromedriver.zip
+
+# Move the chromedriver executable to a location in the system's PATH
+# This makes it automatically discoverable by Selenium
+sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+
+# Clean up the downloaded files
+rm chromedriver.zip
+rm -rf chromedriver-linux64
+
+# 6. Verify installation
+echo "--- Verification ---"
+google-chrome --version
+chromedriver --version
+
+
+9. Give 'ubuntu' User Docker Privileges & Create Workspace
+
+# Add user to docker group
+sudo usermod -aG docker ubuntu
+
+# Create the Jenkins workspace directory
+mkdir -p /home/ubuntu/jenkins_ws
+
+# apply docker group changes
+newgrp docker
+
+Part C: Connect Worker to Master and Finalize Configuration
+
+10. Connect Worker to Master in Jenkins UI
+In your Jenkins dashboard, go to Manage Jenkins > Nodes.
+Click New Node.
+Node Name: docker-worker
+Select Permanent Agent.
+Remote root directory: /home/ubuntu/jenkins_ws
+Labels: docker-worker (This is critical, as it matches agent { label 'docker-worker' } in your Jenkinsfile).
+Usage: Use this node as much as possible.
+Launch method: Launch agent by connecting it to the controller.
+Click Save.
+
+11. Get the Connection Command
+You will be redirected to a page for the new node. It will show commands to run on the worker. It will look something like:
+curl -sO http://<MASTER_IP>:8080/jnlpJars/agent.jar
+java -jar agent.jar -jnlpUrl http://<MASTER_IP>:8080/computer/docker-worker/slave-agent.jnlp -secret <SOME_SECRET> -workDir "/home/ubuntu/jenkins_ws"
+CRITICAL: Jenkins will likely show the master's public IP. You must replace it with the master's Private IP for a stable connection within the AWS network. Find the private IP on the master's EC2 details page.
+
+12. Test Connection and Create Systemd Service
+On the worker machine, run the two commands from the previous step (with the corrected private IP). You should see a "Connected" message. Press Ctrl+C to stop it.
+Now, create a systemd service to manage this connection automatically.
+
+# Create and edit the service file
+sudo nano /etc/systemd/system/jenkins-worker.service
+```*   Paste the following content into the file. **Replace the IP, secret, and workDir with your actual values from the Jenkins UI.**
+
+```ini
+[Unit]
+Description=Jenkins Worker Agent
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/jenkins_ws
+ExecStart=/usr/bin/java -jar /home/ubuntu/jenkins_ws/agent.jar -jnlpUrl http://MASTER_PRIVATE_IP:8080/manage/computer/docker-worker/jenkins-agent.jnlp -secret YOUR_SECRET_HERE  -workDir "/home/ubuntu/jenkins_ws"
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+Save the file (Ctrl+X, then Y, then Enter).
+
+
+
+# Download the agent file to the workspace:
+
+
+# Use the master's PRIVATE IP
+curl -sO http://MASTER_PRIVATE_IP:8080/jnlpJars/agent.jar
+mv agent.jar /home/ubuntu/jenkins_ws/
+Enable and start the service:
+
+sudo systemctl daemon-reload
+sudo systemctl enable jenkins-worker.service
+sudo systemctl start jenkins-worker.service
+
+# Check the status to ensure it's running
+sudo systemctl status jenkins-worker.service
+
+In the Jenkins UI, the docker-worker node should now show as connected.
+
+13. Add Credentials to Jenkins
+Your Jenkinsfile requires Docker Hub credentials.
+Go to Manage Jenkins > Credentials > System > Global credentials.
+Add Credentials:
+Kind: Username with password
+Username: Your Docker Hub username(not Email !)
+Password: Your Docker Hub password 
+ID: dockerhub-creds (Must match the Jenkinsfile)
+Add Credentials again:
+Kind: Secret text
+Secret: Your Docker Hub username (in lowercase, as required by your script)
+ID: dockerhub-username (Must match the Jenkinsfile)
+
+14. Create the Pipeline Job
+In Jenkins, click New Item.
+Enter an item name (e.g., domain-monitor-pipeline) and select Pipeline.
+In the configuration page, scroll down to the Pipeline section.
+Definition: Pipeline script from SCM.
+SCM: Git.
+Repository URL: https://github.com/Tomer-ui/domain-monitor-system.git
+Branch Specifier: */main
+Script Path: Jenkinsfile (this is the default).
+Click Save.
+
+15. Setup GitHub Webhook
+Go to your GitHub repository: Settings > Webhooks > Add webhook.
+Payload URL: http://<JENKINS_MASTER_PUBLIC_IP>:8080/github-webhook/
+Content type: application/json
+Leave the secret blank.
+Which events...: Just the push event is fine.
+Click Add webhook.
+
+Your entire CI infrastructure is now set up. A git push to your main branch will automatically trigger a Jenkins build that tests and, if successful, publishes a new version of your application to Docker Hub.
